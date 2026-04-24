@@ -1,3 +1,5 @@
+# Add language and change beam size
+
 import json
 import os
 from faster_whisper import WhisperModel
@@ -16,8 +18,7 @@ TRANSCRIPTION_PATH = "transcription"
 
 WHISPER_MODEL_SIZE = "medium"
 WHISPER_COMPUTE_TYPE = "int8"
-WHISPER_BEAM_SIZE = 5
-WHISPER_VAD_FILTER = True
+WHISPER_BEAM_SIZE = 8
 
 print("Loading Whisper model into VRAM...")
 
@@ -42,7 +43,8 @@ def transcribe_and_save(audio_path, output_json_path):
     segments, _ = model.transcribe(
         full_input_path, 
         beam_size=WHISPER_BEAM_SIZE, 
-        vad_filter=WHISPER_VAD_FILTER
+        vad_filter=True,
+        language="ru"
     )
     
     transcript_data = []
@@ -68,6 +70,6 @@ def transcribe_and_save(audio_path, output_json_path):
 
 if __name__ == "__main__":
     INPUT_AUDIO_FILE = "test.mp4" 
-    OUTPUT_RESULT_FILE = "result.json"
+    OUTPUT_RESULT_FILE = "result_param.json"
     
     transcribe_and_save(INPUT_AUDIO_FILE, OUTPUT_RESULT_FILE)
