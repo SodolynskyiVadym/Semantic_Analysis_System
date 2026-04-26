@@ -1,5 +1,3 @@
-# Add language and change beam size
-
 import json
 import os
 from faster_whisper import WhisperModel

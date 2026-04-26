@@ -1,4 +1,5 @@
 secret.env
+synthetic_*.json
 
 
 /models
