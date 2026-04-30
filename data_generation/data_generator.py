@@ -3,6 +3,7 @@ import json
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig, Part
 from dotenv import load_dotenv
+from promts import *
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -16,13 +17,14 @@ load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
 # --- Configuration from .env ---
 PROJECT_ID = os.getenv("PROJECT_ID")
 LOCATION = os.getenv("LOCATION")
+MODEL = "gemini-2.5-pro"
 
 if not PROJECT_ID or not LOCATION:
     raise ValueError("PROJECT_ID and LOCATION must be set in the .env file")
 
 # --- Vertex AI Initialization ---
 vertexai.init(project=PROJECT_ID, location=LOCATION)
-model = GenerativeModel("gemini-2.5-flash")
+model = GenerativeModel(MODEL)
 
 # --- Generation Configuration ---
 generation_config = GenerationConfig(
@@ -32,40 +34,15 @@ generation_config = GenerationConfig(
     top_k=32,
 )
 
-# --- Prompt for Gemini ---
-PROMPT = """
-Generate 50 unique, realistic, and short military radio conversations in Russian between two soldiers. Use diverse scenarios: spotting equipment, reporting coordinates, or coordination between units. Ensure the entities are accurately labeled according to the provided schema. The output should be a JSON list of objects, where each object has:
-- `text`: A string (2-4 sentences) representing a conversation snippet in Russian (including military slang, callsigns, and coordinates).
-- `entities`: A list of dictionaries with `word` and `label`.
-
-Example:
-[
-  {
-    "text": "Альфа-7, прием! Вижу танк противника на высоте 105. Запрашиваю разрешение на огонь.",
-    "entities": [
-      {"word": "Альфа-7", "label": "CALLSIGN"},
-      {"word": "танк", "label": "EQUIPMENT"},
-      {"word": "высоте 105", "label": "LOCATION"}
-    ]
-  },
-  {
-    "text": "Ваня, на связи! Принято. Жди подтверждения, работают наши дроны. Конец связи.",
-    "entities": [
-      {"word": "Ваня", "label": "CALLSIGN"},
-      {"word": "дроны", "label": "EQUIPMENT"}
-    ]
-  }
-]
-"""
 
 # --- Data Generation Function ---
-def generate_batch(batch_size: int = 50) -> list:
+def generate_batch(batch_size: int = 50, promt: str = PROMPT_NER_MAIN) -> list:
     print(f"Generating batch of {batch_size} samples...")
     try:
         response = model.generate_content(
-            PROMPT.replace("50", str(batch_size)),
+            promt.replace("{batch_size}", str(batch_size)),
             generation_config=generation_config,
-            safety_settings=[], # Disable safety settings for this task
+            safety_settings=[],
         )
         # Assuming the model returns valid JSON directly
         json_response = json.loads(response.text)
@@ -75,23 +52,25 @@ def generate_batch(batch_size: int = 50) -> list:
         print(f"Error generating data: {e}")
         return []
 
+
 # --- Main Execution ---
-def main(num_batches: int = 10, samples_per_batch: int = 50, output_dir: str = "data_generation"):
+def main(num_batches, samples_per_batch, promt=PROMPT_NER_MAIN, start_index=1, output_dir: str = "training_data"):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     for i in range(num_batches):
         print(f"Starting batch {i + 1}/{num_batches}")
-        batch_data = generate_batch(samples_per_batch)
+        batch_data = generate_batch(samples_per_batch, promt=promt)
         
         # Save each batch to a separate JSON file
-        output_file = os.path.join(output_dir, f"synthetic_ner_dataset_batch_{i+1}.json")
+        output_file = os.path.join(output_dir, f"synthetic_dataset_{start_index}.json")
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(batch_data, f, ensure_ascii=False, indent=2)
         print(f"Batch {i+1} saved to {output_file}")
+        start_index += 1
 
     print(f"Finished generating {num_batches} batches.")
 
+
 if __name__ == "__main__":
-    # You can change these parameters as needed
-    main(num_batches=20, samples_per_batch=25)
+    main(num_batches=5, samples_per_batch=15, promt=PROMPT_NER_MAIN, start_index=6, output_dir="training_data")
