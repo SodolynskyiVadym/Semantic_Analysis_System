@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig, Part
 from dotenv import load_dotenv
@@ -13,6 +14,8 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 # Load environment variables from .env file
 load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
 load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
+
+TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
 
 # --- Configuration from .env ---
 PROJECT_ID = os.getenv("PROJECT_ID")
@@ -54,23 +57,28 @@ def generate_batch(batch_size: int = 50, promt: str = PROMPT_NER_MAIN) -> list:
 
 
 # --- Main Execution ---
-def main(num_batches, samples_per_batch, promt=PROMPT_NER_MAIN, start_index=1, output_dir: str = "training_data"):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+def main(num_batches, samples_per_batch, promt=PROMPT_NER_MAIN, start_index=1):
+    if not os.path.exists(TRAINING_DATA_PATH):
+        os.makedirs(TRAINING_DATA_PATH)
 
     for i in range(num_batches):
         print(f"Starting batch {i + 1}/{num_batches}")
         batch_data = generate_batch(samples_per_batch, promt=promt)
         
         # Save each batch to a separate JSON file
-        output_file = os.path.join(output_dir, f"synthetic_dataset_{start_index}.json")
+        output_file = os.path.join(TRAINING_DATA_PATH, f"synthetic_dataset_{start_index}.json")
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(batch_data, f, ensure_ascii=False, indent=2)
         print(f"Batch {i+1} saved to {output_file}")
         start_index += 1
+        time.sleep(3)
 
     print(f"Finished generating {num_batches} batches.")
 
 
 if __name__ == "__main__":
-    main(num_batches=5, samples_per_batch=15, promt=PROMPT_NER_MAIN, start_index=6, output_dir="training_data")
+    main(num_batches=50, samples_per_batch=15, promt=PROMPT_NER_MAIN, start_index=1)
+    main(num_batches=25, samples_per_batch=15, promt=PROMPT_NER_RECON, start_index=26)
+    main(num_batches=25, samples_per_batch=15, promt=PROMPT_NER_FRIENDLY_OPS, start_index=86)
+    main(num_batches=15, samples_per_batch=15, promt=PROMPT_NER_NOISE, start_index=111)
+
