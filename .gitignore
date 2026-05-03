@@ -6,6 +6,7 @@ training_data
 /models
 stt_module/data
 stt_module/transcription
+/results
 
 
 

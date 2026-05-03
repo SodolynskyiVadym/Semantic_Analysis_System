@@ -16,7 +16,7 @@ ner_pipeline = pipeline("ner", model=NLP_MODEL_PATH, aggregation_strategy="simpl
 
 test_text = "База, я Ворон. Вижу два вражеских танка на перекрестке и до взвода их пехоты. У нас один трехсотый, нужна эвакуация."
 
-print("🔍 Analyzing text...\n")
+print("Analyzing text...\n")
 results = ner_pipeline(test_text)
 
 print(f"Text: {test_text}\n")
