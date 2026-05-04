@@ -1,13 +1,10 @@
 secret.env
-dataset_bio.txt
-training_data
+docker*
 
 
 /models
-stt_module/data
-stt_module/transcription
+/data
 /results
-
 
 
 # Byte-compiled / optimized / DLL files
