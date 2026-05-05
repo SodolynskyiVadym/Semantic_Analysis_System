@@ -8,7 +8,6 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
 
-# Load environment variables from .env file
 load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
 load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
 

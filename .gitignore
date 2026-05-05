@@ -2,9 +2,17 @@ secret.env
 docker*
 
 
-/models
-/data
-/results
+nlp/models
+nlp/training_data
+nlp/results
+
+stt/model
+stt/transcription_data
+
+/rabbitmq
+/database
+/real_audio
+*/uploads
 
 
 # Byte-compiled / optimized / DLL files

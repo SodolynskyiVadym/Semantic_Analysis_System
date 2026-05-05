@@ -1,9 +1,9 @@
 import os
 from dotenv import load_dotenv
 
-from bio_dataset_converter import prepare_dataset
-from tokenization import tokenize_dataset
-from training_model import train_ner_model
+from nlp.training_model.bio_dataset_converter import prepare_dataset
+from nlp.training_model.tokenization import tokenize_dataset
+from nlp.training_model.training_model import train_ner_model
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)

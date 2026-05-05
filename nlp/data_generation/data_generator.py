@@ -4,7 +4,7 @@ import time
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig, Part
 from dotenv import load_dotenv
-from promts import *
+from nlp.data_generation.promts import *
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
