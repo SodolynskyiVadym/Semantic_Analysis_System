@@ -4,8 +4,16 @@ import json
 import shutil
 
 import pika
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+
+# Імпортуємо налаштування БД та моделі
+from database import SessionLocal, engine
+from models import AudioTask
+import models
+
+models.Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -19,6 +27,14 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+# Dependency для отримання сесії бази даних (Connection Pool)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # Root endpoint
 @app.get("/")
 async def read_root():
@@ -29,18 +45,9 @@ async def read_root():
     return {"message": "Semantic analysis system is active"}
 
 @app.post("/upload-audio")
-async def upload_audio(file: UploadFile = File(...)):
+async def upload_audio(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """
-    Uploads an audio file, saves it, and queues a task for processing.
-
-    Args:
-        file (UploadFile): The audio file to upload.
-
-    Returns:
-        dict: A response containing the task ID, filename, and status.
-
-    Raises:
-        HTTPException: If there's an issue saving the file or connecting to RabbitMQ.
+    Uploads an audio file, saves it, creates a DB record, and queues a task.
     """
     task_id = str(uuid.uuid4())
     uploads_dir = "uploads"
@@ -48,23 +55,36 @@ async def upload_audio(file: UploadFile = File(...)):
 
     file_location = os.path.join(uploads_dir, f"{task_id}_{file.filename}")
     
-    # Save the file locally
+    # 1. Save the file locally
     try:
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not save file: {e}")
 
-    # RabbitMQ Integration
+    # 2. Create the record in PostgreSQL
+    try:
+        new_task = AudioTask(
+            id=task_id,
+            file_name=file.filename,
+            status="PENDING"
+        )
+        db.add(new_task)
+        db.commit()
+    except Exception as e:
+        # Якщо база лежить, видаляємо файл і перериваємо процес
+        if os.path.exists(file_location):
+            os.remove(file_location)
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    # 3. RabbitMQ Integration
     rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
-    rabbitmq_user = os.getenv("RABBITMQ_USER", "user")         # Added
-    rabbitmq_pass = os.getenv("RABBITMQ_PASS", "password")     # Added
+    rabbitmq_user = os.getenv("RABBITMQ_USER", "user")
+    rabbitmq_pass = os.getenv("RABBITMQ_PASS", "password")
     queue_name = "stt_tasks"
 
     try:
         credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_pass)
-        
-        # Pass credentials to the connection
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(host=rabbitmq_host, credentials=credentials)
         )
@@ -73,7 +93,7 @@ async def upload_audio(file: UploadFile = File(...)):
 
         message = {
             "task_id": task_id,
-            "file_path": file_location,  # Using the relative path
+            "file_path": file_location, 
             "status": "PENDING"
         }
         channel.basic_publish(
@@ -85,20 +105,22 @@ async def upload_audio(file: UploadFile = File(...)):
             )
         )
         connection.close()
-    except pika.exceptions.AMQPConnectionError as e:
-        # Clean up the saved file if RabbitMQ is down
-        if os.path.exists(file_location):
-            os.remove(file_location)
-        raise HTTPException(status_code=500, detail=f"Could not connect to RabbitMQ or publish message: {e}")
+        
     except Exception as e:
-        # Clean up the saved file for any other unexpected RabbitMQ error
+        # Якщо RabbitMQ впав, оновлюємо статус в БД на FAILED, щоб мати слід проблеми
+        task = db.query(AudioTask).filter(AudioTask.id == task_id).first()
+        if task:
+            task.status = "FAILED"
+            db.commit()
+            
         if os.path.exists(file_location):
             os.remove(file_location)
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred with RabbitMQ: {e}")
+            
+        raise HTTPException(status_code=500, detail=f"Message queue error: {e}")
 
     return {
         "task_id": task_id,
         "filename": file.filename,
         "message": "Audio file uploaded and task queued successfully",
-        "status": "QUEUED"
+        "status": "PENDING"
     }

@@ -23,6 +23,14 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir -r requirements.txt
 
+    
+COPY download_model.py .
+
+# 3. Запускаємо скрипт. Модель завантажиться і залишиться всередині образу
+ENV MODEL_PATH=/app/model
+RUN python download_model.py
+
+
 COPY . .
 
 ENV PYTHONUNBUFFERED=1

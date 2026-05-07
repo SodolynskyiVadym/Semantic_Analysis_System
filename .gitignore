@@ -11,6 +11,7 @@ stt/transcription_data
 /rabbitmq
 /database
 /real_audio
+/datagrip
 */uploads
 
 
