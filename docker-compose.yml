@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13.7-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   
+      - "15672:15672" 
+    volumes:
+      - ./rabbitmq/data/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    restart: always
+
+  database:
+    image: postgres:15
+    container_name: postgres-server
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Test1234
+      - POSTGRES_DB=semantic_analysis_db
+    ports:
+      - "5432:5432"  
+    volumes:
+      - ./database/db_data:/var/lib/postgresql/data
+    restart: always
+  
+
+  stt_worker:
+    build:
+      context: ./stt
+    container_name: stt-worker
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=user
+      - RABBITMQ_PASS=password
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./stt/transcription_data:/app/transcription_data
+    depends_on:
+      - rabbitmq
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

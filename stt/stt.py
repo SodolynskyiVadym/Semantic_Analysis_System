@@ -37,17 +37,45 @@ def process_audio_task(ch, method, properties, body):
     """
     try:
         # 1. Parse the message
+        # task_data = json.loads(body.decode("utf-8"))
+        # task_id = task_data.get("task_id")
+        # file_path = task_data.get("file_path") # FastAPI should pass the full/relative path
+        
+
+
+
+
+
+
+
+
         task_data = json.loads(body.decode("utf-8"))
         task_id = task_data.get("task_id")
-        file_path = task_data.get("file_path") # FastAPI should pass the full/relative path
-        file_path = os.path.join("C:/Users/vadim/Desktop/Semantic_Analysis_System/server", file_path)
+        
+        # Отримуємо сирий шлях з Windows-слешами
+        raw_file_path = task_data.get("file_path") 
+        
+        # Хитрість: замінюємо всі \ на /, а потім витягуємо ЛИШЕ назву файлу
+        # Наприклад, з "uploads\123.mp4" ми отримаємо просто "123.mp4"
+        filename = raw_file_path.replace('\\', '/').split('/')[-1]
+        
+        # Тепер безпечно будуємо правильний абсолютний шлях для Linux-контейнера
+        absolute_file_path = os.path.join(CURRENT_DIR, "uploads", filename)
+
+        print(f"\n[x] Received task {task_id}. Looking for file at: {absolute_file_path}")
 
 
-        print(f"\n[x] Received task {task_id}. File: {file_path}")
 
-        # 2. Check if the file exists (or is accessible via shared Volume)
-        if not os.path.exists(file_path):
-            print(f"[!] Error: File \'{file_path}\' not found! Skipping...")
+
+
+
+
+
+
+
+        # 2. Check if the file exists
+        if not os.path.exists(absolute_file_path):
+            print(f"[!] Error: File \'{absolute_file_path}\' not found! Skipping...")
             # Reject the message so it doesn\'t get stuck in a loop (or basic_nack)
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
@@ -57,9 +85,13 @@ def process_audio_task(ch, method, properties, body):
         
         # 3. Transcription
         segments, _ = model.transcribe(
-            file_path, 
+            absolute_file_path, 
             beam_size=WHISPER_BEAM_SIZE, 
             vad_filter=True,
+            vad_parameters=dict(
+                threshold=0.1, # Знижуємо поріг "голосу" (стандартно 0.5). Тепер навіть тихий голос пройде.
+                min_speech_duration_ms=250 # Мінімальна тривалість звуку, щоб вважати його голосом
+            ),
             language="ru" # For radio intercepts
         )
         
