@@ -4,21 +4,34 @@ import time
 import pika
 from faster_whisper import WhisperModel
 from dotenv import load_dotenv
-
-# Імпорти для БД
 from database import SessionLocal
 from models import AudioTask, Transcription
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
+
 load_dotenv(os.path.join(CURRENT_DIR, "config.env"))
 load_dotenv(os.path.join(CURRENT_DIR, "secret.env"), override=True)
 
+
 MODEL_DIR = os.path.join(CURRENT_DIR, os.getenv("MODEL_PATH", "model"))
-WHISPER_MODEL_SIZE = "medium"
+WHISPER_MODEL_SIZE = "large-v3"
 WHISPER_COMPUTE_TYPE = "int8"
 WHISPER_BEAM_SIZE = 8
+
+
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "user")
+RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASS", "password")
+RABBITMQ_QUEUE_NAME = os.getenv("RABBITMQ_QUEUE_NAME", "stt_tasks")
+
+AUDIO_DIR = os.getenv("AUDIO_DIR", "uploads")
+if os.getenv("ENV", "NoEnv") == "DockerEnv":
+    pass
+else:
+    AUDIO_DIR = os.path.join(PROJECT_ROOT, AUDIO_DIR)
+
 
 print("Loading Whisper model...")
 model = WhisperModel(
@@ -31,31 +44,22 @@ print("Model successfully loaded.\n")
 
 
 def save_to_db(task_id, segments_data):
-    """
-    Оновлює статус завдання та створює окрему сутність Транскрипції.
-    """
     with SessionLocal() as db:
         try:
-            # 1. Знаходимо головне завдання
             task = db.query(AudioTask).filter(AudioTask.id == task_id).first()
             
             if not task:
                 print(f"[!] Warning: Task {task_id} not found in database.")
                 return
 
-            # 2. Оновлюємо статус
             task.status = "COMPLETED"
             
-            # 3. Створюємо новий запис транскрипції, прив'язаний до цього завдання
             new_transcription = Transcription(
                 audio_task_id=task.id,
                 segments=segments_data
             )
             
-            # Додаємо транскрипцію в сесію
             db.add(new_transcription)
-            
-            # Зберігаємо все разом (і оновлений статус, і нову транскрипцію)
             db.commit()
             print(f"[v] Successfully saved transcription for task {task_id} to DB.")
             
@@ -69,31 +73,31 @@ def process_audio_task(ch, method, properties, body):
     try:
         task_data = json.loads(body.decode("utf-8"))
         task_id = task_data.get("task_id")
-        
-        raw_file_path = task_data.get("file_path") 
-        filename = raw_file_path.replace('\\', '/').split('/')[-1]
-        absolute_file_path = os.path.join(CURRENT_DIR, "uploads", filename)
+        file_name = task_data.get("file_name") 
 
-        print(f"\n[x] Received task {task_id}. File: {absolute_file_path}")
+        file_path = os.path.join(f"{AUDIO_DIR}/{file_name}")
 
-        if not os.path.exists(absolute_file_path):
-            print(f"[!] Error: File '{absolute_file_path}' not found! Skipping...")
+        print(f"\n[x] Received task {task_id}. File: {file_path}")
+
+        if not os.path.exists(file_path):
+            print(f"[!] Error: File '{file_path}' not found! Skipping...")
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
         print(f"[*] Starting transcription for task: {task_id}")
         
         segments, _ = model.transcribe(
-            absolute_file_path, 
+            file_path, 
             beam_size=WHISPER_BEAM_SIZE, 
             vad_filter=True,
             vad_parameters=dict(threshold=0.1, min_speech_duration_ms=250),
-            language="ru"
+            language="ru",
+            condition_on_previous_text=False,
+            log_progress=True   # REMOVE AFTER TESTING
         )
         
         transcript_data = []
         
-        # Більше не збираємо full_text, тільки формуємо JSON
         for segment in segments:
             text = segment.text.strip()
             print(f"[{segment.start:.2f}s - {segment.end:.2f}s] {text}")
@@ -106,21 +110,19 @@ def process_audio_task(ch, method, properties, body):
                 "speaker_tag": "UNKNOWN"
             })
             
-        # Записуємо тільки масив сегментів
         save_to_db(task_id, transcript_data)
         
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     except Exception as e:
         print(f"[!] Critical error processing task {task_data.get('task_id', 'UNKNOWN')}: {e}")
-        # Якщо сталася помилка БД або транскрибації - повідомлення лишається в черзі
 
 
-def start_worker():
-    rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
-    rabbitmq_user = os.getenv("RABBITMQ_USER", "user")
-    rabbitmq_pass = os.getenv("RABBITMQ_PASS", "password")
-    queue_name = "stt_tasks"
+def start():
+    rabbitmq_host = RABBITMQ_HOST
+    rabbitmq_user = RABBITMQ_USER
+    rabbitmq_pass = RABBITMQ_PASSWORD
+    queue_name = RABBITMQ_QUEUE_NAME
 
     credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_pass)
     parameters = pika.ConnectionParameters(
@@ -152,5 +154,6 @@ def start_worker():
     finally:
         connection.close()
 
+
 if __name__ == "__main__":
-    start_worker()
+    start()

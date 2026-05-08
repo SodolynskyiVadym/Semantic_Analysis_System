@@ -1,16 +1,19 @@
+from dotenv import load_dotenv
 from faster_whisper import WhisperModel
 import os
 
-# Вказуємо папку, куди збережемо модель (в Docker це буде /app/models)
-MODEL_DIR = os.getenv("MODEL_PATH", "/app/models")
-WHISPER_MODEL_SIZE = "medium"
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(CURRENT_DIR, "config.env"))
+load_dotenv(os.path.join(CURRENT_DIR, "secret.env"), override=True)
+
+MODEL_DIR = os.path.join("/app", os.getenv("MODEL_PATH", "model"))
+WHISPER_MODEL_SIZE = "large-v3"
 
 print(f"Downloading Whisper '{WHISPER_MODEL_SIZE}' model to {MODEL_DIR}...")
 
-# Ініціалізація завантажить файли, якщо їх там ще немає
 WhisperModel(
     WHISPER_MODEL_SIZE,
-    device="cpu", # Для завантаження пристрій не має значення
+    device="cpu",
     compute_type="int8",
     download_root=MODEL_DIR
 )

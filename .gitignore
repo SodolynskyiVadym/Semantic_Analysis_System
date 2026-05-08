@@ -1,18 +1,16 @@
 secret.env
 
-
 nlp/models
 nlp/training_data
 nlp/results
 
 stt/model
-stt/transcription_data
 
 /rabbitmq
 /database
 /real_audio
 /datagrip
-*/uploads
+/uploads
 
 
 # Byte-compiled / optimized / DLL files

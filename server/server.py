@@ -2,32 +2,50 @@ import os
 import uuid
 import json
 import shutil
-
+from dotenv import load_dotenv
 import pika
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-
-# Імпортуємо налаштування БД та моделі
 from database import SessionLocal, engine
 from models import AudioTask
 import models
 
 models.Base.metadata.create_all(bind=engine)
 
-# Initialize FastAPI app
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+
+
+load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
+load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
+
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "user")
+RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASS", "password")
+RABBITMQ_QUEUE_NAME = os.getenv("RABBITMQ_QUEUE_NAME", "stt_tasks")
+
+AUDIO_DIR = os.getenv("AUDIO_DIR", "uploads")
+AUDIO_DIR = os.getenv("AUDIO_DIR", "uploads")
+if os.getenv("ENV", "NoEnv") == "DockerEnv":
+    pass
+else:
+    AUDIO_DIR = os.path.join(PROJECT_ROOT, AUDIO_DIR)
+
+os.makedirs(AUDIO_DIR, exist_ok=True)
+
+
 app = FastAPI()
 
-# Configure CORS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-# Dependency для отримання сесії бази даних (Connection Pool)
 def get_db():
     db = SessionLocal()
     try:
@@ -35,79 +53,64 @@ def get_db():
     finally:
         db.close()
 
-# Root endpoint
 @app.get("/")
 async def read_root():
-    """
-    Root endpoint for the API.
-    Returns a welcome message.
-    """
     return {"message": "Semantic analysis system is active"}
 
 @app.post("/upload-audio")
 async def upload_audio(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """
-    Uploads an audio file, saves it, creates a DB record, and queues a task.
-    """
     task_id = str(uuid.uuid4())
-    uploads_dir = "uploads"
-    os.makedirs(uploads_dir, exist_ok=True)
-
-    file_location = os.path.join(uploads_dir, f"{task_id}_{file.filename}")
+    file_name = f"{task_id}_{file.filename}"
     
-    # 1. Save the file locally
+    file_location = os.path.join(AUDIO_DIR, file_name)
+    
     try:
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not save file: {e}")
 
-    # 2. Create the record in PostgreSQL
     try:
         new_task = AudioTask(
             id=task_id,
-            file_name=file.filename,
+            file_name=file_name,
             status="PENDING"
         )
         db.add(new_task)
         db.commit()
     except Exception as e:
-        # Якщо база лежить, видаляємо файл і перериваємо процес
         if os.path.exists(file_location):
             os.remove(file_location)
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-    # 3. RabbitMQ Integration
-    rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
-    rabbitmq_user = os.getenv("RABBITMQ_USER", "user")
-    rabbitmq_pass = os.getenv("RABBITMQ_PASS", "password")
-    queue_name = "stt_tasks"
-
     try:
-        credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_pass)
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=rabbitmq_host, credentials=credentials)
+        credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
+        parameters = pika.ConnectionParameters(
+            host=RABBITMQ_HOST,
+            credentials=credentials,
+            heartbeat=600
         )
+        connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
-        channel.queue_declare(queue=queue_name, durable=True)
+        channel.queue_declare(queue=RABBITMQ_QUEUE_NAME, durable=True)
 
         message = {
             "task_id": task_id,
-            "file_path": file_location, 
+            "file_name": file_name,
             "status": "PENDING"
         }
+        
         channel.basic_publish(
             exchange='',
-            routing_key=queue_name,
+            routing_key=RABBITMQ_QUEUE_NAME,
             body=json.dumps(message),
             properties=pika.BasicProperties(
-                delivery_mode=2,  # make message persistent
+                delivery_mode=2,
             )
         )
         connection.close()
         
     except Exception as e:
-        # Якщо RabbitMQ впав, оновлюємо статус в БД на FAILED, щоб мати слід проблеми
         task = db.query(AudioTask).filter(AudioTask.id == task_id).first()
         if task:
             task.status = "FAILED"

@@ -28,24 +28,19 @@ services:
     restart: always
   
 
-  stt_worker:
+  stt:
     build:
       context: ./stt
-    container_name: stt-worker
+    container_name: stt-module
     environment:
+      - ENV=DockerEnv
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_USER=user
       - RABBITMQ_PASS=password
       - DB_CONNECTION_STRING=postgresql://postgres:Test1234@database:5432/semantic_analysis_db
+      - AUDIO_DIR=/app/uploads
     volumes:
-      - ./server/uploads:/app/uploads
-      - ./stt/transcription_data:/app/transcription_data
+      - ./uploads:/app/uploads
     depends_on:
       - rabbitmq
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - database
