@@ -1,5 +1,4 @@
-FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
-
+FROM nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -26,7 +25,7 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
     
 COPY download_model.py .
 
-# 3. Запускаємо скрипт. Модель завантажиться і залишиться всередині образу
+
 ENV MODEL_PATH=/app/model
 RUN python download_model.py
 

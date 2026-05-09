@@ -32,10 +32,11 @@ else:
     AUDIO_DIR = os.path.join(PROJECT_ROOT, AUDIO_DIR)
 
 
+
 print("Loading Whisper model...")
 model = WhisperModel(
     WHISPER_MODEL_SIZE, 
-    device="cpu", 
+    device="cuda", 
     compute_type=WHISPER_COMPUTE_TYPE,
     download_root=MODEL_DIR
 )
@@ -86,10 +87,9 @@ def process_audio_task(ch, method, properties, body):
             vad_filter=True,
             vad_parameters=dict(threshold=0.1, min_speech_duration_ms=250),
             language="ru",
-            condition_on_previous_text=False,
-            log_progress=True   # REMOVE AFTER TESTING
+            condition_on_previous_text=False
         )
-        
+  
         transcript_data = []
         
         for segment in segments:
