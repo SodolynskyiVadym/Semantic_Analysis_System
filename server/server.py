@@ -6,12 +6,8 @@ from dotenv import load_dotenv
 import pika
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from database import SessionLocal, engine
-from models import AudioTask
-import models
-
-models.Base.metadata.create_all(bind=engine)
+from database import audio_tasks_collection
+from datetime import datetime
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -46,19 +42,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
 
 @app.get("/")
 async def read_root():
     return {"message": "Semantic analysis system is active"}
 
+
 @app.post("/upload-audio")
-async def upload_audio(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_audio(file: UploadFile = File(...)):
     task_id = str(uuid.uuid4())
     file_name = f"{task_id}_{file.filename}"
     
@@ -70,14 +62,16 @@ async def upload_audio(file: UploadFile = File(...), db: Session = Depends(get_d
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not save file: {e}")
 
+
     try:
-        new_task = AudioTask(
-            id=task_id,
-            file_name=file_name,
-            status="PENDING"
-        )
-        db.add(new_task)
-        db.commit()
+        new_task = {
+            "_id": task_id, 
+            "file_name": file.filename,
+            "status": "PENDING",
+            "created_at": datetime.now()
+        }
+
+        audio_tasks_collection.insert_one(new_task)
     except Exception as e:
         if os.path.exists(file_location):
             os.remove(file_location)
@@ -111,11 +105,6 @@ async def upload_audio(file: UploadFile = File(...), db: Session = Depends(get_d
         connection.close()
         
     except Exception as e:
-        task = db.query(AudioTask).filter(AudioTask.id == task_id).first()
-        if task:
-            task.status = "FAILED"
-            db.commit()
-            
         if os.path.exists(file_location):
             os.remove(file_location)
             

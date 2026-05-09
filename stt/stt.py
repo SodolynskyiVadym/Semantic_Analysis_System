@@ -4,8 +4,7 @@ import time
 import pika
 from faster_whisper import WhisperModel
 from dotenv import load_dotenv
-from database import SessionLocal
-from models import AudioTask, Transcription
+from database import audio_tasks_collection
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
@@ -44,29 +43,24 @@ print("Model successfully loaded.\n")
 
 
 def save_to_db(task_id, segments_data):
-    with SessionLocal() as db:
-        try:
-            task = db.query(AudioTask).filter(AudioTask.id == task_id).first()
+    try:
+        result = audio_tasks_collection.update_one(
+            {"_id": task_id},
+            {
+                "$set": {
+                    "status": "COMPLETED",
+                    "transcription": segments_data
+                }
+            }
+        )
+        if result.matched_count == 0:
+            print(f"[!] Warning: Task {task_id} not found in MongoDB.")
+        else:
+            print(f"[v] Successfully saved transcription for task {task_id} to MongoDB.")
             
-            if not task:
-                print(f"[!] Warning: Task {task_id} not found in database.")
-                return
-
-            task.status = "COMPLETED"
-            
-            new_transcription = Transcription(
-                audio_task_id=task.id,
-                segments=segments_data
-            )
-            
-            db.add(new_transcription)
-            db.commit()
-            print(f"[v] Successfully saved transcription for task {task_id} to DB.")
-            
-        except Exception as e:
-            db.rollback()
-            print(f"[!] Database error for task {task_id}: {e}")
-            raise e
+    except Exception as e:
+        print(f"[!] Database error for task {task_id}: {e}")
+        raise e
 
 
 def process_audio_task(ch, method, properties, body):
