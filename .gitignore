@@ -3,6 +3,7 @@ dataset_bio.txt
 
 nlp/models
 nlp/training_data
+nlp/stt_training_data
 nlp/results
 
 stt/model

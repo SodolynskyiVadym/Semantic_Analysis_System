@@ -3,30 +3,38 @@
 # Використовувати для ~50% датасету
 # ==========================================
 PROMPT_NER_MAIN = """
-Generate {batch_size} unique, realistic, and short military radio conversations in Russian between two soldiers. Use diverse scenarios: combat engagements, spotting enemy movements, or coordination. Ensure the entities are accurately labeled according to the provided schema. The output should be a JSON list of objects, where each object has:
-- `text`: A string (2-4 sentences) representing a conversation snippet in Russian. Use context clues (e.g., "наш", "вражеский", "противник") to show affiliation, but DO NOT overuse them. Sound like a natural, fast-paced radio exchange.
+Generate {batch_size} unique, realistic, and short military radio conversations in Russian between two soldiers. Use diverse scenarios: combat engagements, spotting enemy movements, or coordination. The output should be a JSON list of objects, where each object has:
+- `text`: A string (2-4 sentences) representing a conversation snippet.
 - `entities`: A list of dictionaries with `word` and `label`. Labels MUST BE chosen from this list ONLY: CALLSIGN, EQUIPMENT-ENEMY, EQUIPMENT-FRIENDLY, LOCATION, QUANTITY, PERSONNEL-ENEMY, PERSONNEL-FRIENDLY.
 
-IMPORTANT RULES FOR LABELS:
-- `EQUIPMENT-ENEMY` / `PERSONNEL-ENEMY`: Enemy vehicles, weapons, and troops.
-- `EQUIPMENT-FRIENDLY` / `PERSONNEL-FRIENDLY`: Allied/own vehicles, weapons, and troops.
+STT FORMATTING RULES:
+- The generated text MUST simulate raw Speech-to-Text (STT) output. 
+- Remove most punctuation (commas, periods, question marks). Keep it as a continuous stream of words. Use lowercase mostly.
+- Insert realistic hesitations ("ээ", "ну", "короче"), stuttering ("б-база"), and Russian profanity naturally.
+- Spell out numbers as words (e.g., "двадцать второй" instead of "22").
+- Mix Russian with Surzhyk (e.g., "шо", "поняв", "тю").
+
+PERSPECTIVE & VOCABULARY RULES:
+- The speaker is a Russian soldier. 
+- `EQUIPMENT-FRIENDLY` / `PERSONNEL-FRIENDLY`: Russian/Allied forces (e.g., "наши", "мобики", "коробочка", "мотолыга", "арта", "двухсотый", "трехсотый").
+- `EQUIPMENT-ENEMY` / `PERSONNEL-ENEMY`: Ukrainian forces (e.g., "хохлы", "укропы", "зсу", "птичка", "брэдли").
 - `QUANTITY`: Use ONLY for counting equipment or personnel (e.g., "два", "взвод"). Ignore time and distance.
-- BOUNDARY RULE: Extract ONLY the core noun or specific military term (e.g., "БМП", "пулеметчик", "танк"). DO NOT include pronouns or descriptive adjectives in the 'word' field (e.g., extract "БМП", NOT "наш БМП" or "вражеский БМП"). DO NOT extract generic pronouns like "мы" or "у нас" as personnel.
+- BOUNDARY RULE: Extract ONLY the core noun. DO NOT extract generic pronouns like "мы" or "у нас" as personnel.
 
 Example:
 [
   {
-    "text": "Берёза, я Сокол-2. Коробочка повреждена. Наблюдаю движение противника: три пикапа и до взвода пехоты заходят в квадрат 45. Запрашиваю арту.",
+    "text": "береза я сокол два блядь ну коробочка повреждена ээ наблюдаю движение противника короче три пикапа и до взвода их пехоты заходят в сорок пятый квадрат запрашиваю арту давай бегом",
     "entities": [
-      {"word": "Берёза", "label": "CALLSIGN"},
-      {"word": "Сокол-2", "label": "CALLSIGN"},
-      {"word": "Коробочка", "label": "EQUIPMENT-FRIENDLY"},
+      {"word": "береза", "label": "CALLSIGN"},
+      {"word": "сокол два", "label": "CALLSIGN"},
+      {"word": "коробочка", "label": "EQUIPMENT-FRIENDLY"},
       {"word": "противника", "label": "PERSONNEL-ENEMY"},
       {"word": "три", "label": "QUANTITY"},
       {"word": "пикапа", "label": "EQUIPMENT-ENEMY"},
       {"word": "взвода", "label": "QUANTITY"},
       {"word": "пехоты", "label": "PERSONNEL-ENEMY"},
-      {"word": "квадрат 45", "label": "LOCATION"}
+      {"word": "сорок пятый квадрат", "label": "LOCATION"}
     ]
   }
 ]
@@ -40,24 +48,30 @@ PROMPT_NER_RECON = """
 Generate {batch_size} short military radio conversations in Russian focused SPECIFICALLY on reconnaissance: spotting and counting enemy vehicles, equipment, and troops. 
 Labels to use ONLY: CALLSIGN, EQUIPMENT-ENEMY, PERSONNEL-ENEMY, LOCATION, QUANTITY.
 
-IMPORTANT RULES FOR LABELS:
-- Focus on describing enemy forces, but keep it natural. DO NOT overuse words like "вражеский".
-- `QUANTITY`: Use ONLY for counting equipment or personnel. DO NOT use for time or distance.
-- BOUNDARY RULE: Extract ONLY the core noun or specific military term (e.g., "БМП", "пехота"). DO NOT include pronouns or descriptive adjectives in the 'word' field (e.g., extract "коробочки", NOT "вражеские коробочки").
+STT FORMATTING RULES:
+- Simulate raw Speech-to-Text (STT) output. Remove punctuation. 
+- Insert hesitations ("ээ", "типа"), filler words, and Russian profanity.
+- Spell out numbers as words.
+
+PERSPECTIVE & VOCABULARY RULES:
+- The speaker is a Russian soldier observing Ukrainian forces.
+- Use slang for enemy forces: "птичка" (drone), "укропы", "хохлы", "бэха", "пикапы".
+- `QUANTITY`: Use ONLY for counting equipment or personnel.
+- BOUNDARY RULE: Extract ONLY the core noun. DO NOT include adjectives like "вражеские" in the 'word' field.
 
 Example:
 [
   {
-    "text": "Ворон, ответь базе. По дороге на юг прошли четыре коробочки, похожи на БМП. Их пехота зашла в лесопосадку за высотой 200.",
+    "text": "ворон ответь базе шо там по дороге на юг прошли блядь четыре коробочки похожи на бмп их пехота зашла в зеленку за высотой двести",
     "entities": [
-      {"word": "Ворон", "label": "CALLSIGN"},
+      {"word": "ворон", "label": "CALLSIGN"},
       {"word": "базе", "label": "CALLSIGN"},
       {"word": "четыре", "label": "QUANTITY"},
       {"word": "коробочки", "label": "EQUIPMENT-ENEMY"},
-      {"word": "БМП", "label": "EQUIPMENT-ENEMY"},
+      {"word": "бмп", "label": "EQUIPMENT-ENEMY"},
       {"word": "пехота", "label": "PERSONNEL-ENEMY"},
-      {"word": "лесопосадку", "label": "LOCATION"},
-      {"word": "высотой 200", "label": "LOCATION"}
+      {"word": "зеленку", "label": "LOCATION"},
+      {"word": "высотой двести", "label": "LOCATION"}
     ]
   }
 ]
@@ -68,23 +82,30 @@ Example:
 # Використовувати для ~20% датасету
 # ==========================================
 PROMPT_NER_FRIENDLY_OPS = """
-Generate {batch_size} short military radio conversations in Russian focused SPECIFICALLY on friendly operations: requesting medevac, reporting friendly casualties, ammo resupply, or allied troop movements.
+Generate {batch_size} short military radio conversations in Russian focused SPECIFICALLY on friendly operations: requesting medevac, reporting casualties, ammo resupply, or allied troop movements.
 Labels to use ONLY: CALLSIGN, EQUIPMENT-FRIENDLY, PERSONNEL-FRIENDLY, LOCATION, QUANTITY.
 
-IMPORTANT RULES FOR LABELS:
-- Focus on friendly terminology, but keep it natural. DO NOT overuse "наш".
-- `QUANTITY`: Use ONLY for counting equipment or personnel. DO NOT use for time or distance.
-- BOUNDARY RULE: Extract ONLY the core noun or specific military term (e.g., "пулемет", "броня", "трехсотый"). DO NOT include pronouns or descriptive adjectives in the 'word' field (e.g., extract "пулемету", NOT "нашему пулемету"). DO NOT extract generic pronouns like "мы" or "у нас" as personnel.
+STT FORMATTING RULES:
+- Simulate raw Speech-to-Text (STT) output without punctuation.
+- Include background panic, stuttering, and heavy Russian profanity.
+- Spell out numbers as words.
+
+PERSPECTIVE & VOCABULARY RULES:
+- The speaker is a Russian soldier talking about their own forces.
+- Use slang for casualties and equipment: "двухсотый", "трехсотый", "бк", "броня", "мотолыга", "медики".
+- `QUANTITY`: Use ONLY for counting equipment or casualties.
+- BOUNDARY RULE: Extract ONLY the core noun (e.g., "броню", "трехсотый").
 
 Example:
 [
   {
-    "text": "Гранит, я Альфа. У нас один тяжелый трехсотый, нужна срочная эвакуация. Заканчивается БК к пулемету. Ждем броню на точке сбора.",
+    "text": "гранит я альфа пиздец у нас один тяжелый трехсотый ээ нужна срочная эвакуация блядь заканчивается бк к пулемету ждем броню на точке сбора быстрее",
     "entities": [
-      {"word": "Гранит", "label": "CALLSIGN"},
-      {"word": "Альфа", "label": "CALLSIGN"},
+      {"word": "гранит", "label": "CALLSIGN"},
+      {"word": "альфа", "label": "CALLSIGN"},
       {"word": "один", "label": "QUANTITY"},
       {"word": "трехсотый", "label": "PERSONNEL-FRIENDLY"},
+      {"word": "бк", "label": "EQUIPMENT-FRIENDLY"},
       {"word": "пулемету", "label": "EQUIPMENT-FRIENDLY"},
       {"word": "броню", "label": "EQUIPMENT-FRIENDLY"},
       {"word": "точке сбора", "label": "LOCATION"}
@@ -98,24 +119,28 @@ Example:
 # Використовувати для ~10% датасету
 # ==========================================
 PROMPT_NER_NOISE = """
-Generate {batch_size} short military radio conversations in Russian representing BACKGROUND CHATTER. Topics should be mundane: checking radio signal, complaining about weather/mud, food, or asking for someone to come to a specific location. 
-CRITICAL RULE: DO NOT include any mentions of weapons, vehicles, enemy troops, or casualties. 
-Labels to use ONLY: CALLSIGN, LOCATION. Do not use any other labels.
+Generate {batch_size} short military radio conversations in Russian representing BACKGROUND CHATTER. Topics: checking radio signal, complaining about weather/mud, food, or general fatigue.
+CRITICAL RULE: DO NOT include ANY mentions of weapons, vehicles, enemy troops, friendly troops, or casualties. 
+Labels to use ONLY: CALLSIGN, LOCATION.
+
+STT FORMATTING RULES:
+- Simulate raw Speech-to-Text (STT) output. No punctuation.
+- Include Surzhyk, sighing sounds ("уф", "ага"), and everyday profanity.
 
 Example:
 [
   {
-    "text": "Сокол, я Дерево. Как слышишь меня? Прием. Дождь заливает окопы, связи почти нет.",
+    "text": "сокол я дерево ээ как слышишь меня прием блядь дождь заливает окопы связи нихуя почти нет",
     "entities": [
-      {"word": "Сокол", "label": "CALLSIGN"},
-      {"word": "Дерево", "label": "CALLSIGN"},
+      {"word": "сокол", "label": "CALLSIGN"},
+      {"word": "дерево", "label": "CALLSIGN"},
       {"word": "окопы", "label": "LOCATION"}
     ]
   },
   {
-    "text": "Дерево, слышу тебя на троечку. Захватите сигарет, когда будете идти на базу.",
+    "text": "дерево слышу тебя на троечку короче захватите сигарет когда будете идти на базу шото вообще курить нечего",
     "entities": [
-      {"word": "Дерево", "label": "CALLSIGN"},
+      {"word": "дерево", "label": "CALLSIGN"},
       {"word": "базу", "label": "LOCATION"}
     ]
   }

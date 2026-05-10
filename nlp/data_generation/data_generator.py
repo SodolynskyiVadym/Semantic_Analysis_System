@@ -4,7 +4,8 @@ import time
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig, Part
 from dotenv import load_dotenv
-from nlp.data_generation.promts import *
+
+from promts import *
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -15,7 +16,9 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
 load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
 
-TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
+# TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
+TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, "stt_training_data")
+
 
 # --- Configuration from .env ---
 PROJECT_ID = os.getenv("PROJECT_ID")
@@ -77,8 +80,8 @@ def main(num_batches, samples_per_batch, promt=PROMPT_NER_MAIN, start_index=1):
 
 
 if __name__ == "__main__":
-    main(num_batches=50, samples_per_batch=15, promt=PROMPT_NER_MAIN, start_index=1)
-    main(num_batches=25, samples_per_batch=15, promt=PROMPT_NER_RECON, start_index=26)
-    main(num_batches=25, samples_per_batch=15, promt=PROMPT_NER_FRIENDLY_OPS, start_index=86)
-    main(num_batches=15, samples_per_batch=15, promt=PROMPT_NER_NOISE, start_index=111)
+    main(num_batches=70, samples_per_batch=15, promt=PROMPT_NER_MAIN, start_index=1)
+    main(num_batches=30, samples_per_batch=15, promt=PROMPT_NER_RECON, start_index=71)
+    main(num_batches=30, samples_per_batch=15, promt=PROMPT_NER_FRIENDLY_OPS, start_index=101)
+    main(num_batches=20, samples_per_batch=15, promt=PROMPT_NER_NOISE, start_index=131)
 
