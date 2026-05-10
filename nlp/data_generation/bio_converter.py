@@ -5,14 +5,14 @@ from dotenv import load_dotenv
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+NLP_ROOT = os.path.dirname(CURRENT_DIR)
 
 
-load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
-load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
+load_dotenv(os.path.join(NLP_ROOT, "config.env"))
+load_dotenv(os.path.join(NLP_ROOT, "secret.env"), override=True)
 
-TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
-OUTPUT_FILE = os.getenv("BIO_FILE", "dataset_bio.txt")
+TRAINING_DATA_PATH = os.path.join(NLP_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
+OUTPUT_FILE = os.path.join(NLP_ROOT, os.getenv("BIO_FILE", "dataset_bio.txt"))
 
 def tokenize_text(text):
     return re.findall(r"[\w'-]+|[.,!?;]", text)

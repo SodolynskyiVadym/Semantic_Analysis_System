@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
-load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
-load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
+load_dotenv(os.path.join(CURRENT_DIR, "config.env"))
+load_dotenv(os.path.join(CURRENT_DIR, "secret.env"), override=True)
 
-NLP_MODEL_PATH = os.path.join(PROJECT_ROOT, os.getenv("NLP_MODEL_PATH", "military_ner_model_gpu"))
+NLP_MODEL_PATH = os.path.join(CURRENT_DIR, os.getenv("MODEL_PATH", "models"), "military_ner_model_cpu")
 
 print("Loading model from local disk...")
 ner_pipeline = pipeline("ner", model=NLP_MODEL_PATH, aggregation_strategy="simple")

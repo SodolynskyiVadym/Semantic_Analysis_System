@@ -1,18 +1,19 @@
 import os
 from dotenv import load_dotenv
 
-from nlp.training_model.bio_dataset_converter import prepare_dataset
-from nlp.training_model.tokenization import tokenize_dataset
-from nlp.training_model.training_model import train_ner_model
+from nlp.model_training.bio_dataset_converter import prepare_dataset
+from nlp.model_training.tokenization import tokenize_dataset
+from nlp.model_training.training_model import train_ner_model
+
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+NLP_ROOT = os.path.dirname(CURRENT_DIR)
 
-load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
-load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
+load_dotenv(os.path.join(NLP_ROOT, "config.env"))
+load_dotenv(os.path.join(NLP_ROOT, "secret.env"), override=True)
 
-BIO_FILE_PATH = os.path.join(PROJECT_ROOT, os.getenv("BIO_FILE_PATH", "data/dataset_bio.txt"))
-NLP_MODEL_SAVE_PATH = os.path.join(PROJECT_ROOT, os.getenv("MODEL_PATH", "models"), "military_ner_model_local")
+BIO_FILE_PATH = os.path.join(NLP_ROOT, os.getenv("BIO_FILE_PATH", "data/dataset_bio.txt"))
+NLP_MODEL_SAVE_PATH = os.path.join(NLP_ROOT, os.getenv("MODEL_PATH", "models"), "military_ner_model_local")
 MODEL_CHECKPOINT = os.getenv("MODEL_CHECKPOINT", "xlm-roberta-base")
 
 def main():
@@ -31,7 +32,4 @@ def main():
     print("Model training completed and saved!")
 
 if __name__ == "__main__":
-    print(PROJECT_ROOT)
-    print(CURRENT_DIR)
-    print(BIO_FILE_PATH)
     main()
