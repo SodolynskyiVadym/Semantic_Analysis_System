@@ -412,3 +412,45 @@ LABELING RULES (BIO/ENTITY STANDARDS):
 --------------------------------------------------
 
 Provide only the clean JSON output, no conversational filler."""
+
+
+
+
+PROMT_CONTEXTUAL_PERSONNEL = """
+You are a Data Scientist specializing in generating high-quality synthetic datasets for training a Named Entity Recognition (NER) model based on XLM-RoBERTa or DeBERTa.
+
+PROJECT CONTEXT:
+This model is a core component of a semantic analysis system for intercepted military radio communications. The input text is the raw output from a Speech-to-Text (STT) system (like OpenAI Whisper), which means it contains transcription errors, lacks proper punctuation, and is filled with military slang, surzhyk, and informal language.
+
+OBJECTIVE:
+Generate {BATCH_SIZE} unique radio intercept snippets in Russian for targeted Data Augmentation.
+The output must be a valid JSON list of objects, where each object contains:
+- "text": The raw transcription string.
+- "entities": A list of objects with "word" and "label".
+
+TEXT GENERATION RULES (STT REALISM):
+1. Simulate raw Whisper output: minimal to no punctuation (avoid periods and commas where possible).
+2. Use filler words and hesitations: "ээ", "ну", "короче", "бля", "типа".
+3. Naturally include Russian profanity (mat) and surzhyk (e.g., "шо", "поняв").
+4. Maintain the chaotic nature of battlefield communication.
+
+LABELING RULES (BIO/ENTITY STANDARDS):
+1. Extract only the root noun: Do NOT include pronouns ("наш", "их", "те") or adjectives in the "word" field.
+2. Perspective: The speaker is a Russian soldier. 
+   - Ukrainian/ZSU forces = ENEMY.
+   - Russian/Allied forces = FRIENDLY.
+3. Allowed Labels: CALLSIGN, EQUIPMENT-ENEMY, EQUIPMENT-FRIENDLY, PERSONNEL-ENEMY, PERSONNEL-FRIENDLY, LOCATION, QUANTITY.
+
+--------------------------------------------------
+🎯 ПОТОЧНЕ ЦІЛЬОВЕ ЗАВДАННЯ (TARGET AUGMENTATION):
+- Сфокусуйся на використанні нейтральних слів, що позначають особовий склад: "мобилизованные", "мобики", "пацаны", "ребята", "люди".
+- ЗАВДАННЯ (Боротьба з дисбалансом класів): Модель повинна навчитися розрізняти, про кого йде мова, спираючись на контекст (займенники "их/наши", розташування "в тех окопах/у нас", напрямок стрільби тощо).
+- КРИТИЧНЕ ПРАВИЛО СПІВВІДНОШЕННЯ (85/15):
+  * У 15% згенерованих реплік ці слова мають належати до українських сил і розмічатися як PERSONNEL-ENEMY. Створюй контекст, де російський солдат говорить про ворога (наприклад: "их пацаны огрызаются", "те мобики пошли на штурм", "положили их ребят").
+  * У 85% згенерованих реплік ці слова мають належати до російських сил і розмічатися як PERSONNEL-FRIENDLY (наприклад: "наших пацанов накрыло", "мои мобики отошли").
+- СУВОРЕ ПРАВИЛО (Без займенників): Під час розмітки (поля "word") КАТЕГОРИЧНО ЗАБОРОНЕНО включати займенники у сутність! 
+  * ПРАВИЛЬНО: text: "их пацаны", entity: "пацаны" (label: PERSONNEL-ENEMY).
+  * НЕПРАВИЛЬНО: text: "их пацаны", entity: "их пацаны".
+--------------------------------------------------
+
+Provide only the clean JSON output, no conversational filler."""

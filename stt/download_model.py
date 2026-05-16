@@ -13,7 +13,7 @@ print(f"Downloading Whisper '{WHISPER_MODEL_SIZE}' model to {MODEL_DIR}...")
 
 WhisperModel(
     WHISPER_MODEL_SIZE,
-    device="cpu",
+    device="cuda",
     compute_type="int8",
     download_root=MODEL_DIR
 )

@@ -12,7 +12,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(CURRENT_DIR, "config.env"))
 load_dotenv(os.path.join(CURRENT_DIR, "secret.env"), override=True)
 
-NLP_MODEL_PATH = os.path.join(CURRENT_DIR, os.getenv("MODEL_PATH", "models"), "military_ner_model_v8")
+NLP_MODEL_PATH = os.path.join(CURRENT_DIR, os.getenv("MODEL_PATH", "models"), "military_ner_model_v9")
 
 try:
     print(f"Loading NER model from {NLP_MODEL_PATH}...")
@@ -28,7 +28,7 @@ def process_transcription_for_ner():
     
     try:
         document = audio_tasks_collection.find_one(
-            {"_id": "8bfacc0a-149b-4cb5-900f-485df75f05e7", "status": "COMPLETED", "transcription": {"$exists": True, "$type": "array", "$ne": []}}
+            {"_id": "5ada2012-bfe2-4ed5-999a-ccc6f4a329b8", "status": "COMPLETED", "transcription": {"$exists": True, "$type": "array", "$ne": []}}
         )
 
         if not document:

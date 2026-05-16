@@ -13,7 +13,7 @@ load_dotenv(os.path.join(NLP_ROOT, "secret.env"), override=True)
 
 TRAINING_DATA_PATH = os.path.join(NLP_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
 TRAINING_DATA_PATH_STT = os.path.join(NLP_ROOT, "stt_training_data")
-OUTPUT_FILE = os.path.join(NLP_ROOT, os.getenv("BIO_FILE", "dataset_bio.txt"))
+OUTPUT_FILE = os.path.join(NLP_ROOT, os.getenv("BIO_FILE_PATH", "dataset_bio.txt"))
 
 def tokenize_text(text):
     return re.findall(r"[\w'-]+|[.,!?;]", text)

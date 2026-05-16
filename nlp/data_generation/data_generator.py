@@ -87,6 +87,7 @@ if __name__ == "__main__":
     # main(num_batches=10, samples_per_batch=15, promt=PROMT_SPECIAL_DATA, start_index=181) # REMOVE THIS PROMT
     # main(num_batches=20, samples_per_batch=15, promt=PROMT_MILITARY_POSITIONS, start_index=191)
     # main(num_batches=10, samples_per_batch=15, promt=PROMT_CIVILIANS, start_index=211)
-    main(num_batches=20, samples_per_batch=15, promt=PROMT_SWEAR_WORD, start_index=221)
-    main(num_batches=15, samples_per_batch=15, promt=PROMT_MILITARY_UNITS, start_index=241)
+    # main(num_batches=20, samples_per_batch=15, promt=PROMT_SWEAR_WORD, start_index=221)
+    # main(num_batches=15, samples_per_batch=15, promt=PROMT_MILITARY_UNITS, start_index=241)
+    main(num_batches=15, samples_per_batch=15, promt=PROMT_CONTEXTUAL_PERSONNEL, start_index=256)
 

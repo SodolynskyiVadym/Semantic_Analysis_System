@@ -12,8 +12,8 @@ NLP_ROOT = os.path.dirname(CURRENT_DIR)
 load_dotenv(os.path.join(NLP_ROOT, "config.env"))
 load_dotenv(os.path.join(NLP_ROOT, "secret.env"), override=True)
 
-BIO_FILE_PATH = os.path.join(NLP_ROOT, os.getenv("BIO_FILE_PATH", "data/dataset_bio.txt"))
-NLP_MODEL_SAVE_PATH = os.path.join(NLP_ROOT, os.getenv("MODEL_PATH", "models"), "military_ner_model_local")
+BIO_FILE_PATH = os.path.join(NLP_ROOT, os.getenv("BIO_FILE_PATH", "dataset_bio.txt"))
+NLP_MODEL_SAVE_PATH = os.path.join(NLP_ROOT, os.getenv("NLP_MODEL_PATH", "models"), "military_ner_model_local")
 MODEL_CHECKPOINT = os.getenv("MODEL_CHECKPOINT", "xlm-roberta-base")
 
 def main():
