@@ -2,7 +2,7 @@
 # ЗАГАЛЬНИЙ БІЙ (Мікс своїх та чужих)
 # Використовувати для ~50% датасету
 # ==========================================
-PROMPT_NER_MAIN = """
+PROMPT_NER_MAIN_CLEAN = """
 Generate {batch_size} unique, realistic, and short military radio conversations in Russian between two soldiers. Use diverse scenarios: combat engagements, spotting enemy movements, or coordination. Ensure the entities are accurately labeled according to the provided schema. The output should be a JSON list of objects, where each object has:
 - `text`: A string (2-4 sentences) representing a conversation snippet in Russian. Use context clues (e.g., "наш", "вражеский", "противник") to show affiliation, but DO NOT overuse them. Sound like a natural, fast-paced radio exchange.
 - `entities`: A list of dictionaries with `word` and `label`. Labels MUST BE chosen from this list ONLY: CALLSIGN, EQUIPMENT-ENEMY, EQUIPMENT-FRIENDLY, LOCATION, QUANTITY, PERSONNEL-ENEMY, PERSONNEL-FRIENDLY.
@@ -36,7 +36,7 @@ Example:
 # РОЗВІДКА (Фокус на ворогах - ENEMY)
 # Використовувати для ~20% датасету
 # ==========================================
-PROMPT_NER_RECON = """
+PROMPT_NER_RECON_CLEAN = """
 Generate {batch_size} short military radio conversations in Russian focused SPECIFICALLY on reconnaissance: spotting and counting enemy vehicles, equipment, and troops. 
 Labels to use ONLY: CALLSIGN, EQUIPMENT-ENEMY, PERSONNEL-ENEMY, LOCATION, QUANTITY.
 
@@ -67,7 +67,7 @@ Example:
 # ЛОГІСТИКА ТА МЕДИЦИНА (Фокус на своїх - FRIENDLY)
 # Використовувати для ~20% датасету
 # ==========================================
-PROMPT_NER_FRIENDLY_OPS = """
+PROMPT_NER_FRIENDLY_OPS_CLEAN = """
 Generate {batch_size} short military radio conversations in Russian focused SPECIFICALLY on friendly operations: requesting medevac, reporting friendly casualties, ammo resupply, or allied troop movements.
 Labels to use ONLY: CALLSIGN, EQUIPMENT-FRIENDLY, PERSONNEL-FRIENDLY, LOCATION, QUANTITY.
 
@@ -97,7 +97,7 @@ Example:
 # ФОНОВИЙ ШУМ (Без техніки та піхоти)
 # Використовувати для ~10% датасету
 # ==========================================
-PROMPT_NER_NOISE = """
+PROMPT_NER_NOISE_CLEAN = """
 Generate {batch_size} short military radio conversations in Russian representing BACKGROUND CHATTER. Topics should be mundane: checking radio signal, complaining about weather/mud, food, or asking for someone to come to a specific location. 
 CRITICAL RULE: DO NOT include any mentions of weapons, vehicles, enemy troops, or casualties. 
 Labels to use ONLY: CALLSIGN, LOCATION. Do not use any other labels.

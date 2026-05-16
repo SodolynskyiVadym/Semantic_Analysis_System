@@ -4,7 +4,6 @@ import time
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig, Part
 from dotenv import load_dotenv
-
 from promts import *
 
 
@@ -80,8 +79,14 @@ def main(num_batches, samples_per_batch, promt=PROMPT_NER_MAIN, start_index=1):
 
 
 if __name__ == "__main__":
-    main(num_batches=70, samples_per_batch=15, promt=PROMPT_NER_MAIN, start_index=1)
-    main(num_batches=30, samples_per_batch=15, promt=PROMPT_NER_RECON, start_index=71)
-    main(num_batches=30, samples_per_batch=15, promt=PROMPT_NER_FRIENDLY_OPS, start_index=101)
-    main(num_batches=20, samples_per_batch=15, promt=PROMPT_NER_NOISE, start_index=131)
+    # main(num_batches=70, samples_per_batch=15, promt=PROMPT_NER_MAIN, start_index=1)
+    # main(num_batches=30, samples_per_batch=15, promt=PROMPT_NER_RECON, start_index=71)
+    # main(num_batches=30, samples_per_batch=15, promt=PROMPT_NER_FRIENDLY_OPS, start_index=101)
+    # main(num_batches=20, samples_per_batch=15, promt=PROMPT_NER_NOISE, start_index=131)
+    # main(num_batches=30, samples_per_batch=15, promt=PROMPT_NER_AMBIGUOUS, start_index=151)
+    # main(num_batches=10, samples_per_batch=15, promt=PROMT_SPECIAL_DATA, start_index=181) # REMOVE THIS PROMT
+    # main(num_batches=20, samples_per_batch=15, promt=PROMT_MILITARY_POSITIONS, start_index=191)
+    # main(num_batches=10, samples_per_batch=15, promt=PROMT_CIVILIANS, start_index=211)
+    main(num_batches=20, samples_per_batch=15, promt=PROMT_SWEAR_WORD, start_index=221)
+    main(num_batches=15, samples_per_batch=15, promt=PROMT_MILITARY_UNITS, start_index=241)
 

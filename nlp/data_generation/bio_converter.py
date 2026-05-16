@@ -12,6 +12,7 @@ load_dotenv(os.path.join(NLP_ROOT, "config.env"))
 load_dotenv(os.path.join(NLP_ROOT, "secret.env"), override=True)
 
 TRAINING_DATA_PATH = os.path.join(NLP_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
+TRAINING_DATA_PATH_STT = os.path.join(NLP_ROOT, "stt_training_data")
 OUTPUT_FILE = os.path.join(NLP_ROOT, os.getenv("BIO_FILE", "dataset_bio.txt"))
 
 def tokenize_text(text):
@@ -60,6 +61,18 @@ def main():
     for filename in os.listdir(TRAINING_DATA_PATH):
         if filename.endswith(".json"):
             filepath = os.path.join(TRAINING_DATA_PATH, filename)
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    json_data = json.load(f)
+                    all_bio_data.extend(convert_json_to_bio(json_data))
+            except Exception as e:
+                print(f"Error reading {filename}: {e}")
+    
+
+    print(f"Reading files from {TRAINING_DATA_PATH_STT}...")
+    for filename in os.listdir(TRAINING_DATA_PATH_STT):
+        if filename.endswith(".json"):
+            filepath = os.path.join(TRAINING_DATA_PATH_STT, filename)
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     json_data = json.load(f)
