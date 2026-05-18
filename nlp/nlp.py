@@ -28,7 +28,7 @@ def process_transcription_for_ner():
     
     try:
         document = audio_tasks_collection.find_one(
-            {"_id": "5ada2012-bfe2-4ed5-999a-ccc6f4a329b8", "status": "COMPLETED", "transcription": {"$exists": True, "$type": "array", "$ne": []}}
+            {"_id": "f9d4ced6-72fb-4b08-8751-a37ead0a0029", "status": "COMPLETED", "transcription": {"$exists": True, "$type": "array", "$ne": []}}
         )
 
         if not document:

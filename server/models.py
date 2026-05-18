@@ -1,47 +1,48 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship
+from pydantic import BaseModel, Field
 from datetime import datetime
-import uuid
-from database import Base
-
-class AudioTask(Base):
-    __tablename__ = "audio_tasks"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-
-    file_name = Column(String, index=True)
-
-    status = Column(String, default="PENDING")
-
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    transcription = relationship("Transcription", back_populates="task", uselist=False)
-    
-    nlp_entities = relationship("NLPEntity", back_populates="task")
+from typing import Optional
+from enum import Enum
 
 
-class Transcription(Base):
-    __tablename__ = "transcriptions"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-
-    audio_task_id = Column(String(36), ForeignKey("audio_tasks.id"), unique=True)
-
-    segments = Column(JSONB, nullable=False)
-
-    task = relationship("AudioTask", back_populates="transcription")
+class AnalysisStatus(str, Enum):
+    PENDING = "PENDING"
+    PROCESSING = "TRANSCRIBED"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
 
 
-class NLPEntity(Base):
-    __tablename__ = "nlp_entities"
+class EntityType(str, Enum):
+    QUANTITY = "QUANTITY"
+    LOCATION = "LOCATION"
+    PERSONNEL_FRIENDLY = "PERSONNEL-FRIENDLY"
+    PERSONNEL_ENEMY = "PERSONNEL-ENEMY"
+    EQUIPMENT_FRIENDLY = "EQUIPMENT-FRIENDLY"
+    EQUIPMENT_ENEMY = "EQUIPMENT-ENEMY"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 
-    audio_task_id = Column(String(36), ForeignKey("audio_tasks.id"))
-    
-    entity_type = Column(String, index=True) 
-    
-    entity_value = Column(String)
+class AnalysisSegment(BaseModel):
+    start_time: float
+    whisper_score: float
+    annotated_text: str 
 
-    task = relationship("AudioTask", back_populates="nlp_entities")
+
+class AnalysisCreate(BaseModel):
+    id: str = Field(...)
+    file_name: str = Field(
+        ..., 
+        pattern=r"^.+\.(wav|mp3|m4a|flac|mp4)$"
+    )
+
+
+class AnalysisUpdate(BaseModel):
+    analysis: Optional[list[AnalysisSegment]] = None
+    entities: Optional[list[EntityType]] = None
+
+
+class AnalysisResponse(BaseModel):
+    id: str                             
+    file_name: str
+    status: AnalysisStatus
+    analysis: Optional[list[AnalysisSegment]] = None
+    entities: Optional[list[EntityType]] = None
+    created_at: datetime
