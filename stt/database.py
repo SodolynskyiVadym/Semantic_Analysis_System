@@ -1,33 +1,40 @@
-import os
-from pymongo import MongoClient
-from dotenv import load_dotenv
+from typing import Optional
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import ReturnDocument
+from config import settings
+from models import Analysis, AnalysisUpdate
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "config.env")) 
-
-MONGO_URI = os.getenv("MONGO_CONNECTION_STRING", "mongodb://admin:password@localhost:27017/")
-
-client = MongoClient(MONGO_URI)
-db = client[os.getenv("MONGO_DB_NAME", "analysis_db")]
+client = AsyncIOMotorClient(settings.MONGO_CONNECTION_STRING)
+db = client[settings.MONGO_DB_NAME]
 
 audio_tasks_collection = db["audio_tasks"]
 
 
-def save_transcription_to_db(task_id, segments_data):
-    try:
-        result = audio_tasks_collection.update_one(
-            {"_id": task_id},
-            {
-                "$set": {
-                    "status": "TRANSCRIBED",
-                    "transcription": segments_data
-                }
-            }
-        )
-        if result.matched_count == 0:
-            print(f"[!] Warning: Task {task_id} not found in MongoDB.")
-        else:
-            print(f"[v] Successfully saved transcription for task {task_id} to MongoDB.")
-            
-    except Exception as e:
-        print(f"[!] Database error for task {task_id}: {e}")
-        raise e
+def _doc_to_response(doc: dict) -> Analysis:
+    return Analysis(
+        id=str(doc["_id"]),
+        file_name=doc["file_name"],
+        status=doc["status"],
+        transcription=doc.get("transcription")
+    )
+
+
+async def get(analysis_id: str) -> Optional[Analysis]:
+    doc = await audio_tasks_collection.find_one({"_id": analysis_id})
+    return _doc_to_response(doc) if doc else None
+
+
+async def update(analysis_id: str, payload: AnalysisUpdate) -> Optional[Analysis]:
+    changes = payload.model_dump(exclude_none=True)
+    if not changes:
+        return await get(analysis_id)
+    
+    if "transcription" in changes and payload.transcription:
+        changes["transcription"] = [s.model_dump() for s in payload.transcription]
+
+    result = await audio_tasks_collection.find_one_and_update(
+        {"_id": analysis_id},
+        {"$set": changes},
+        return_document=ReturnDocument.AFTER,
+    )
+    return _doc_to_response(result) if result else None

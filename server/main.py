@@ -59,8 +59,7 @@ async def create_analysis(file: UploadFile = File(...), repo: RepoDep = None, mq
     try:
         await mq.publish({
             "task_id": id,
-            "file_name": file.filename,
-            "status": AnalysisStatus.PENDING,
+            "file_name": f"{id}_{file.filename}"
         })
     except RuntimeError as e:
         if os.path.exists(file_location):
