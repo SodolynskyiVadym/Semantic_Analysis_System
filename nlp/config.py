@@ -7,12 +7,8 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
 class Settings(BaseSettings):
     # TODO: add ENV variable(maybe)
-    AUDIO_DIR: str = os.path.join(PROJECT_ROOT, "uploads")
-    MODEL_DIR: str = os.path.join(CURRENT_DIR, "model")
+    MODEL_DIR: str = os.path.join(CURRENT_DIR, "models", "military_ner_model_v9")
 
-    WHISPER_MODEL_SIZE: str = "large-v3"
-    WHISPER_COMPUTE_TYPE: str = "int8"
-    WHISPER_BEAM_SIZE: int = 8
 
     MONGO_CONNECTION_STRING: str = "mongodb://admin:password@localhost:27017/"
     MONGO_DB_NAME: str = "analysis_db"
@@ -21,8 +17,7 @@ class Settings(BaseSettings):
     RABBITMQ_PORT: int = 5672
     RABBITMQ_USER: str = "user"
     RABBITMQ_PASSWORD: str = "password"
-    RABBITMQ_INPUT_QUEUE: str = "stt_queue"
-    RABBITMQ_OUTPUT_QUEUE: str = "nlp_queue"
+    RABBITMQ_QUEUE: str = "nlp_queue"
 
     model_config = SettingsConfigDict(
         env_file=".env",

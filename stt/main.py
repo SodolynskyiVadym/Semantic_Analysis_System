@@ -9,38 +9,52 @@ from database import update as update_db
 from models import AnalysisUpdate, AnalysisStatus
 
 
-async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
+async def process_audio_task(
+    message: aio_pika.abc.AbstractIncomingMessage, 
+    exchange: aio_pika.abc.AbstractExchange
+):
     async with message.process():
         task_data = json.loads(message.body.decode("utf-8"))
-        task_id = task_data.get("task_id")
+        id = task_data.get("id")
         file_name = task_data.get("file_name")
-
 
         file_path = os.path.join(settings.AUDIO_DIR, file_name)
 
-        print(f"\n[x] Received task {task_id}. File: {file_path}")
+        print(f"\n[x] Received task {id}. File: {file_path}")
 
         if not os.path.exists(file_path):
             print(f"[!] Error: File '{file_path}' not found! Skipping...")
-            await update_db(task_id, AnalysisUpdate(status=AnalysisStatus.FAILED))
+            await update_db(id, AnalysisUpdate(status=AnalysisStatus.FAILED))
             return
 
         try:
-            print(f"[*] Starting transcription for {task_id}...")
+            print(f"[*] Starting transcription for {id}...")
             
             transcript_data = await asyncio.to_thread(run_transcription, file_path)
             
+
             payload = AnalysisUpdate(
-                status=AnalysisStatus.COMPLETED,
+                status=AnalysisStatus.TRANSCRIBED,
                 transcription=transcript_data
             )
-            await update_db(task_id, payload)
+            await update_db(id, payload)
             
-            print(f"[v] Task {task_id} completed successfully.")
+            print(f"[v] Task {id} transcribed successfully.")
+            print(f"[*] Sending task {id} to NLP queue...")
+
+            nlp_message = json.dumps({"id": id}).encode("utf-8")
+            
+            await exchange.publish(
+                aio_pika.Message(
+                    body=nlp_message,
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+                ),
+                routing_key=settings.RABBITMQ_OUTPUT_QUEUE
+            )
 
         except Exception as e:
-            print(f"[!] Critical error processing task {task_id}: {e}")
-            await update_db(task_id, AnalysisUpdate(status=AnalysisStatus.FAILED))
+            print(f"[!] Critical error processing task {id}: {e}")
+            await update_db(id, AnalysisUpdate(status=AnalysisStatus.FAILED))
             raise e 
 
 
@@ -55,15 +69,20 @@ async def main():
             print("RabbitMQ is not ready yet. Retrying in 5 seconds...")
             await asyncio.sleep(5)
 
-
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=1)
 
-    queue = await channel.declare_queue(settings.RABBITMQ_QUEUE, durable=True)
-
-    print(f"[*] Async Worker is running and waiting for messages in '{settings.RABBITMQ_QUEUE}'. To exit press CTRL+C")
+    stt_queue = await channel.declare_queue(settings.RABBITMQ_INPUT_QUEUE, durable=True)
     
-    await queue.consume(process_audio_task)
+    await channel.declare_queue(settings.RABBITMQ_OUTPUT_QUEUE, durable=True)
+    exchange = channel.default_exchange
+
+    print(f"[*] Async STT Worker is running and waiting for messages in '{settings.RABBITMQ_INPUT_QUEUE}'. To exit press CTRL+C")
+    
+    async def on_message(message: aio_pika.abc.AbstractIncomingMessage):
+        await process_audio_task(message, exchange)
+
+    await stt_queue.consume(on_message)
 
     try:
         await asyncio.Future()

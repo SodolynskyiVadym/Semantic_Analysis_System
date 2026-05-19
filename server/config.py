@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     RABBITMQ_PORT: int = 5672
     RABBITMQ_USER: str = "user"
     RABBITMQ_PASSWORD: str = "password"
-    RABBITMQ_QUEUE: str = "stt_tasks"
+    RABBITMQ_QUEUE: str = "stt_queue"
 
     model_config = SettingsConfigDict(
         env_file=".env",

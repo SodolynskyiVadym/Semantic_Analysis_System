@@ -5,7 +5,7 @@ from typing import Optional
 
 class AnalysisStatus(str, Enum):
     PENDING = "PENDING"
-    PROCESSING = "TRANSCRIBED"
+    TRANSCRIBED = "TRANSCRIBED"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 

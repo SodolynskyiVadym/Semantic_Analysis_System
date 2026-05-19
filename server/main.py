@@ -58,7 +58,7 @@ async def create_analysis(file: UploadFile = File(...), repo: RepoDep = None, mq
     
     try:
         await mq.publish({
-            "task_id": id,
+            "id": id,
             "file_name": f"{id}_{file.filename}"
         })
     except RuntimeError as e:
