@@ -6,7 +6,7 @@ import aio_pika
 from config import settings
 from stt import run_transcription
 from database import update as update_db
-from models import AnalysisUpdate, AnalysisStatus
+from models import AudioTaskUpdate, TaskStatus
 
 
 async def process_audio_task(
@@ -24,7 +24,7 @@ async def process_audio_task(
 
         if not os.path.exists(file_path):
             print(f"[!] Error: File '{file_path}' not found! Skipping...")
-            await update_db(id, AnalysisUpdate(status=AnalysisStatus.FAILED))
+            await update_db(id, AudioTaskUpdate(status=TaskStatus.FAILED))
             return
 
         try:
@@ -33,8 +33,8 @@ async def process_audio_task(
             transcript_data = await asyncio.to_thread(run_transcription, file_path)
             
 
-            payload = AnalysisUpdate(
-                status=AnalysisStatus.TRANSCRIBED,
+            payload = AudioTaskUpdate(
+                status=TaskStatus.TRANSCRIBED,
                 transcription=transcript_data
             )
             await update_db(id, payload)
@@ -54,7 +54,7 @@ async def process_audio_task(
 
         except Exception as e:
             print(f"[!] Critical error processing task {id}: {e}")
-            await update_db(id, AnalysisUpdate(status=AnalysisStatus.FAILED))
+            await update_db(id, AudioTaskUpdate(status=TaskStatus.FAILED))
             raise e 
 
 

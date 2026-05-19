@@ -4,7 +4,7 @@ from typing import Optional
 from enum import Enum
 
 
-class AnalysisStatus(str, Enum):
+class TaskStatus(str, Enum):
     PENDING = "PENDING"
     PROCESSING = "TRANSCRIBED"
     COMPLETED = "COMPLETED"
@@ -20,13 +20,21 @@ class EntityType(str, Enum):
     EQUIPMENT_ENEMY = "EQUIPMENT-ENEMY"
 
 
-class AnalysisSegment(BaseModel):
+class TranscribeSegment(BaseModel):
     start_time: float
     whisper_score: float
     annotated_text: str 
 
 
-class AnalysisCreate(BaseModel):
+class AnalysisSegment(BaseModel):
+    start: float
+    end: float
+    word: str
+    score: float
+    entity_group: EntityType
+
+
+class AudioTaskCreate(BaseModel):
     id: str = Field(...)
     file_name: str = Field(
         ..., 
@@ -34,15 +42,17 @@ class AnalysisCreate(BaseModel):
     )
 
 
-class AnalysisUpdate(BaseModel):
+class AudioTaskUpdate(BaseModel):
+    transcription: Optional[list[TranscribeSegment]] = None
     analysis: Optional[list[AnalysisSegment]] = None
     entities: Optional[list[EntityType]] = None
 
 
-class AnalysisResponse(BaseModel):
+class AudioTaskResponse(BaseModel):
     id: str                             
     file_name: str
-    status: AnalysisStatus
+    status: TaskStatus
     analysis: Optional[list[AnalysisSegment]] = None
+    transcription: Optional[list[TranscribeSegment]] = None
     entities: Optional[list[EntityType]] = None
     created_at: datetime

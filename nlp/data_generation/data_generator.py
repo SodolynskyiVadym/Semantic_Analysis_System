@@ -11,15 +11,13 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
 
-# Load environment variables from .env file
+
 load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
 load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
 
-# TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
-TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, "stt_training_data")
+TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
 
 
-# --- Configuration from .env ---
 PROJECT_ID = os.getenv("PROJECT_ID")
 LOCATION = os.getenv("LOCATION")
 MODEL = "gemini-2.5-pro"
@@ -27,11 +25,11 @@ MODEL = "gemini-2.5-pro"
 if not PROJECT_ID or not LOCATION:
     raise ValueError("PROJECT_ID and LOCATION must be set in the .env file")
 
-# --- Vertex AI Initialization ---
+
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 model = GenerativeModel(MODEL)
 
-# --- Generation Configuration ---
+
 generation_config = GenerationConfig(
     response_mime_type="application/json",
     temperature=0.9,
@@ -40,7 +38,6 @@ generation_config = GenerationConfig(
 )
 
 
-# --- Data Generation Function ---
 def generate_batch(batch_size: int = 50, promt: str = PROMPT_NER_MAIN) -> list:
     print(f"Generating batch of {batch_size} samples...")
     try:
@@ -49,7 +46,6 @@ def generate_batch(batch_size: int = 50, promt: str = PROMPT_NER_MAIN) -> list:
             generation_config=generation_config,
             safety_settings=[],
         )
-        # Assuming the model returns valid JSON directly
         json_response = json.loads(response.text)
         print(f"Successfully generated {len(json_response)} samples.")
         return json_response
@@ -58,7 +54,6 @@ def generate_batch(batch_size: int = 50, promt: str = PROMPT_NER_MAIN) -> list:
         return []
 
 
-# --- Main Execution ---
 def main(num_batches, samples_per_batch, promt=PROMPT_NER_MAIN, start_index=1):
     if not os.path.exists(TRAINING_DATA_PATH):
         os.makedirs(TRAINING_DATA_PATH)

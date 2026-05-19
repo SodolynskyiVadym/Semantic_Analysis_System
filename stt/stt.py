@@ -4,12 +4,17 @@ from models import TranscribeSegment
 
 
 print("Loading Whisper model...")
+
+
+
 model = WhisperModel(
     settings.WHISPER_MODEL_SIZE, 
     device="cuda", 
     compute_type=settings.WHISPER_COMPUTE_TYPE,
     download_root=settings.MODEL_DIR
 )
+
+
 print("Model successfully loaded.\n")
 
 def run_transcription(file_path):

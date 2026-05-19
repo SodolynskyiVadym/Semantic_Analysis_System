@@ -7,7 +7,6 @@ def read_conll_file(file_path):
         ner_tags = []
         for line in f:
             line = line.strip()
-            # An empty line signifies the end of a sentence/conversation
             if not line: 
                 if tokens:
                     yield {"tokens": tokens, "ner_tags": ner_tags}
@@ -18,7 +17,6 @@ def read_conll_file(file_path):
                 if len(splits) == 2:
                     tokens.append(splits[0])
                     ner_tags.append(splits[1])
-        # For the last sentence
         if tokens:
             yield {"tokens": tokens, "ner_tags": ner_tags}
 

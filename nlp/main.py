@@ -3,7 +3,7 @@ import asyncio
 import aio_pika
 from config import settings
 from database import update as update_db, get as get_db
-from models import AnalysisUpdate, AnalysisStatus
+from models import AudioTaskUpdate, TaskStatus
 from nlp import run_ner
 
 
@@ -20,8 +20,8 @@ async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
         try:
             analysis, entities = await asyncio.to_thread(run_ner, document.transcription)
 
-            payload = AnalysisUpdate(
-                status=AnalysisStatus.COMPLETED, 
+            payload = AudioTaskUpdate(
+                status=TaskStatus.COMPLETED, 
                 analysis=analysis, 
                 entities=entities
             )
@@ -29,7 +29,7 @@ async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
             
         except Exception as e:
             print(f"[!] Error updating document: {e}")
-            await update_db(id, AnalysisUpdate(status=AnalysisStatus.FAILED))
+            await update_db(id, AudioTaskUpdate(status=TaskStatus.FAILED))
             raise e
 
 

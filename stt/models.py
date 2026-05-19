@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 
-class AnalysisStatus(str, Enum):
+class TaskStatus(str, Enum):
     PENDING = "PENDING"
     TRANSCRIBED = "TRANSCRIBED"
     COMPLETED = "COMPLETED"
@@ -17,14 +17,14 @@ class TranscribeSegment(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0) 
 
 
-class Analysis(BaseModel):
+class AudioTask(BaseModel):
     id: str
-    status: AnalysisStatus
+    status: TaskStatus
     file_name: str
 
 
-class AnalysisUpdate(BaseModel):
-    status: AnalysisStatus
+class AudioTaskUpdate(BaseModel):
+    status: TaskStatus
     transcription: Optional[list[TranscribeSegment]] = None
 
 
