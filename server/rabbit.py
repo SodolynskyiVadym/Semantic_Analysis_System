@@ -24,11 +24,11 @@ class RabbitClient:
         self._channel = await self._connection.channel()
         await self._channel.set_qos(prefetch_count=1)
         await self._channel.declare_queue(
-            settings.RABBITMQ_QUEUE,
+            settings.RABBITMQ_STT_QUEUE,
             durable=True,
         )
 
-        print(f"RabbitMQ connected to {settings.RABBITMQ_QUEUE}")
+        print(f"RabbitMQ connected to {settings.RABBITMQ_STT_QUEUE}")
 
 
     async def disconnect(self) -> None:
@@ -49,7 +49,7 @@ class RabbitClient:
                 delivery_mode=DeliveryMode.PERSISTENT,
                 content_type="application/json",
             ),
-            routing_key=settings.RABBITMQ_QUEUE,
+            routing_key=settings.RABBITMQ_STT_QUEUE,
         )
 
 rabbit_client = RabbitClient()

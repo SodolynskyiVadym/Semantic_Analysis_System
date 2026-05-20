@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     # SHARED CONFIG
     # TODO: add ENV variable(maybe)
     CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
+    AUDIO_DIR: str = os.path.join(CURRENT_DIR, "uploads")
+
 
     MONGO_CONNECTION_STRING: str = "mongodb://admin:password@localhost:27017/"
     MONGO_DB_NAME: str = "analysis_db"
@@ -14,7 +16,8 @@ class Settings(BaseSettings):
     RABBITMQ_PORT: int = 5672
     RABBITMQ_USER: str = "user"
     RABBITMQ_PASSWORD: str = "password"
-    RABBITMQ_QUEUE: str = "nlp_queue"
+    RABBITMQ_NLP_QUEUE: str = "nlp_queue"
+    RABBITMQ_STT_QUEUE: str = "stt_queue"
 
 
     # NLP CONFIG
@@ -35,7 +38,6 @@ class Settings(BaseSettings):
     # STT CONFIG
     STT_DIR: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stt")
 
-    AUDIO_DIR: str = os.path.join(CURRENT_DIR, "uploads")
     STT_MODEL_DIR: str = os.path.join(STT_DIR, "model")
     STT_LOG_FILE: str = os.path.join(STT_DIR, "stt.log")
 

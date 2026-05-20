@@ -1,23 +1,31 @@
 import json
 import asyncio
 import aio_pika
+
 from config import settings
 from nlp.database import update as update_db, get as get_db
 from nlp.models import AudioTaskUpdate, TaskStatus
 from nlp.nlp import run_ner
+from setup_logger import setup_worker_logger
+
+
+log = setup_worker_logger("nlp_worker", settings.NLP_LOG_FILE)
 
 
 async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
     async with message.process():
         task_data = json.loads(message.body.decode("utf-8"))
-        id = task_data.get("id")
+        task_id = task_data.get("id")
 
-        document = await get_db(id)
+        log.info("Received NLP task: %s", task_id)
+
+        document = await get_db(task_id)
         if document is None:
-            print(f"[!] No suitable document found for task_id: {id}")
+            log.error("No suitable document found in DB for task_id: %s. Skipping...", task_id)
             return
 
         try:
+            log.info("Starting XLM-RoBERTa NER analysis for task %s...", task_id)
             analysis, entities = await asyncio.to_thread(run_ner, document.transcription)
 
             payload = AudioTaskUpdate(
@@ -25,31 +33,33 @@ async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
                 analysis=analysis, 
                 entities=entities
             )
-            await update_db(id, payload)
+            await update_db(task_id, payload)
+            
+            log.info("Task %s completed successfully. Entities saved to DB.", task_id)
             
         except Exception as e:
-            print(f"[!] Error updating document: {e}")
-            await update_db(id, AudioTaskUpdate(status=TaskStatus.FAILED))
-            raise e
+            log.error("Critical error updating document for task %s: %s", task_id, str(e), exc_info=True)
+            await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))
+            raise 
 
 
 async def main():
     connection = None
     while not connection:
         try:
-            print(f"Connecting to async RabbitMQ at {settings.RABBITMQ_HOST}...")
+            log.info("Connecting to async RabbitMQ at %s...", settings.RABBITMQ_HOST)
             amqp_url = f"amqp://{settings.RABBITMQ_USER}:{settings.RABBITMQ_PASSWORD}@{settings.RABBITMQ_HOST}/"
             connection = await aio_pika.connect_robust(amqp_url)
         except Exception:
-            print("RabbitMQ is not ready yet. Retrying in 5 seconds...")
+            log.warning("RabbitMQ is not ready yet. Retrying in 5 seconds...")
             await asyncio.sleep(5)
 
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=1)
 
-    queue = await channel.declare_queue(settings.RABBITMQ_QUEUE, durable=True)
+    queue = await channel.declare_queue(settings.RABBITMQ_NLP_QUEUE, durable=True)
 
-    print(f"[*] Async Worker is running and waiting for messages in '{settings.RABBITMQ_QUEUE}'. To exit press CTRL+C")
+    log.info("Async NLP Worker is running and waiting for messages in '%s'. To exit press CTRL+C", settings.RABBITMQ_NLP_QUEUE)
     
     await queue.consume(process_audio_task)
 
@@ -58,7 +68,7 @@ async def main():
     except asyncio.CancelledError:
         pass
     finally:
-        print("\nClosing connection...")
+        log.info("Closing RabbitMQ connection...")
         await connection.close()
 
 
