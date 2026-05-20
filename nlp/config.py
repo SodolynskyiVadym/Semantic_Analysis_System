@@ -5,9 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # TODO: add ENV variable(maybe)
 
-    NLP_DIR: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nlp")
+    NLP_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
-    MODEL_DIR: str = os.path.join(NLP_DIR, "models")
+    MODEL_PATH: str = os.path.join(NLP_DIR, "models", "military_ner_model_v9")
     BIO_FILE_PATH: str = os.path.join(NLP_DIR, "dataset_bio.txt")
     TRAINING_DATA_PATH: str = os.path.join(NLP_DIR, "training_data")
 
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     RABBITMQ_QUEUE: str = "nlp_queue"
 
     model_config = SettingsConfigDict(
-        env_file=("config.env", "secret.env"),
+        env_file="secret.env",
         env_file_encoding="utf-8"
     )
 

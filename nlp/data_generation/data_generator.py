@@ -2,9 +2,9 @@ import os
 import json
 import time
 import vertexai
-from vertexai.generative_models import GenerativeModel, GenerationConfig, Part
+from vertexai.generative_models import GenerativeModel, GenerationConfig
 from promts import *
-from config import settings
+from nlp.config import settings
 
 
 TRAINING_DATA_PATH = settings.TRAINING_DATA_PATH

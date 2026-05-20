@@ -1,5 +1,4 @@
 from datasets import Dataset, ClassLabel
-import random
 
 def read_conll_file(file_path):
     with open(file_path, "r", encoding="utf-8") as f:

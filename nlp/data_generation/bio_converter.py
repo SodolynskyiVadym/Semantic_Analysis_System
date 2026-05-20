@@ -1,18 +1,11 @@
 import os
 import json
 import re
-from dotenv import load_dotenv
+from nlp.config import settings
 
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-NLP_ROOT = os.path.dirname(CURRENT_DIR)
-
-
-load_dotenv(os.path.join(NLP_ROOT, "config.env"))
-load_dotenv(os.path.join(NLP_ROOT, "secret.env"), override=True)
-
-TRAINING_DATA_PATH = os.path.join(NLP_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
-OUTPUT_FILE = os.path.join(NLP_ROOT, os.getenv("BIO_FILE_PATH", "dataset_bio.txt"))
+TRAINING_DATA_PATH = settings.TRAINING_DATA_PATH
+OUTPUT_FILE = settings.BIO_FILE_PATH
 
 def tokenize_text(text):
     return re.findall(r"[\w'-]+|[.,!?;]", text)

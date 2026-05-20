@@ -8,7 +8,7 @@ from nlp.config import settings
 
 
 BIO_FILE_PATH = settings.BIO_FILE_PATH
-NLP_MODEL_SAVE_PATH = os.path.join(settings.MODEL_DIR, "military_ner_model_local")
+NLP_MODEL_SAVE_PATH = os.path.join(settings.MODEL_PATH, "military_ner_model_local")
 MODEL_CHECKPOINT = settings.MODEL_CHECKPOINT
 
 def main():
