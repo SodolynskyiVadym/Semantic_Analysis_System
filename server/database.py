@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from config import settings
+from server.config import settings
 
 
 async def get_client() -> AsyncIOMotorClient:

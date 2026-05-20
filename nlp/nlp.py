@@ -1,5 +1,5 @@
 from transformers import pipeline
-from nlp.config import settings
+from config import settings
 from nlp.models import AnalysisSegment, TranscribeSegment
 from nlp.nlp_text_normalizer import normalize_ner
 

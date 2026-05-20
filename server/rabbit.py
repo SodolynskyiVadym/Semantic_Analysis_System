@@ -4,7 +4,7 @@ from typing import Any
 import aio_pika
 import aio_pika.abc
 from aio_pika import DeliveryMode, ExchangeType, Message
-from config import settings
+from server.config import settings
 
 
 class RabbitClient:

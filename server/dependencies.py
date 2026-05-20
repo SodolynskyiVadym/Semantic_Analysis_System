@@ -1,10 +1,10 @@
 from typing import Annotated
 from fastapi import Depends
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from config import settings
-from repository import AudioTaskRepository
+from server.config import settings
+from server.repository import AudioTaskRepository
 from fastapi import Request
-from rabbit import RabbitClient
+from server.rabbit import RabbitClient
 
 
 def get_mongo_client(request: Request) -> AsyncIOMotorClient:

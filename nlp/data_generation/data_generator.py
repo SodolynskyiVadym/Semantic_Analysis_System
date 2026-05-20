@@ -4,7 +4,7 @@ import time
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig
 from promts import *
-from nlp.config import settings
+from config import settings
 
 
 TRAINING_DATA_PATH = settings.TRAINING_DATA_PATH

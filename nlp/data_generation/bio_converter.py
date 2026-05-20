@@ -1,7 +1,7 @@
 import os
 import json
 import re
-from nlp.config import settings
+from config import settings
 
 
 TRAINING_DATA_PATH = settings.TRAINING_DATA_PATH

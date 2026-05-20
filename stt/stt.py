@@ -1,19 +1,16 @@
 from faster_whisper import WhisperModel
 from config import settings
-from models import TranscribeSegment
+from stt.models import TranscribeSegment
 
 
 print("Loading Whisper model...")
-
-
 
 model = WhisperModel(
     settings.WHISPER_MODEL_SIZE, 
     device="cuda", 
     compute_type=settings.WHISPER_COMPUTE_TYPE,
-    download_root=settings.MODEL_DIR
+    download_root=settings.STT_MODEL_DIR
 )
-
 
 print("Model successfully loaded.\n")
 

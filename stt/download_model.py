@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from faster_whisper import WhisperModel
 import os
+from config import settings
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(CURRENT_DIR, "config.env"))

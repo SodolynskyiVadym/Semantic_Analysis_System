@@ -2,7 +2,7 @@ from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 from config import settings
-from models import AudioTask, AudioTaskUpdate
+from stt.models import AudioTask, AudioTaskUpdate
 
 client = AsyncIOMotorClient(settings.MONGO_CONNECTION_STRING)
 db = client[settings.MONGO_DB_NAME]

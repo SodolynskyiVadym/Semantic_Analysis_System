@@ -1,10 +1,8 @@
-import uuid
 from datetime import datetime, timezone
 from typing import Optional
-
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from models import AudioTaskCreate, AudioTaskUpdate, AudioTaskResponse, TaskStatus
+from server.models import AudioTaskCreate, AudioTaskUpdate, AudioTaskResponse, TaskStatus
 
 
 def _doc_to_audio_task_response(doc: dict) -> AudioTaskResponse:

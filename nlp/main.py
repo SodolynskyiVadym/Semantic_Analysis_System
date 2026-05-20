@@ -1,7 +1,7 @@
 import json
 import asyncio
 import aio_pika
-from nlp.config import settings
+from config import settings
 from nlp.database import update as update_db, get as get_db
 from nlp.models import AudioTaskUpdate, TaskStatus
 from nlp.nlp import run_ner

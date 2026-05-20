@@ -4,9 +4,13 @@ import asyncio
 import aio_pika
 
 from config import settings
-from stt import run_transcription
-from database import update as update_db
-from models import AudioTaskUpdate, TaskStatus
+from stt.stt import run_transcription
+from stt.database import update as update_db
+from stt.models import AudioTaskUpdate, TaskStatus
+from setup_logger import setup_worker_logger
+
+
+log = setup_worker_logger("stt_worker", settings.STT_LOG_FILE)
 
 
 async def process_audio_task(
@@ -15,34 +19,33 @@ async def process_audio_task(
 ):
     async with message.process():
         task_data = json.loads(message.body.decode("utf-8"))
-        id = task_data.get("id")
+        task_id = task_data.get("id")
         file_name = task_data.get("file_name")
 
         file_path = os.path.join(settings.AUDIO_DIR, file_name)
 
-        print(f"\n[x] Received task {id}. File: {file_path}")
+        log.info("Received task %s. File: %s", task_id, file_path)
 
         if not os.path.exists(file_path):
-            print(f"[!] Error: File '{file_path}' not found! Skipping...")
-            await update_db(id, AudioTaskUpdate(status=TaskStatus.FAILED))
+            log.error("File '%s' not found for task %s! Skipping...", file_path, task_id)
+            await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))
             return
 
         try:
-            print(f"[*] Starting transcription for {id}...")
+            log.info("Starting transcription for task %s...", task_id)
             
             transcript_data = await asyncio.to_thread(run_transcription, file_path)
             
-
             payload = AudioTaskUpdate(
                 status=TaskStatus.TRANSCRIBED,
                 transcription=transcript_data
             )
-            await update_db(id, payload)
+            await update_db(task_id, payload)
             
-            print(f"[v] Task {id} transcribed successfully.")
-            print(f"[*] Sending task {id} to NLP queue...")
+            log.info("Task %s transcribed successfully.", task_id)
+            log.info("Sending task %s to NLP queue...", task_id)
 
-            nlp_message = json.dumps({"id": id}).encode("utf-8")
+            nlp_message = json.dumps({"id": task_id}).encode("utf-8")
             
             await exchange.publish(
                 aio_pika.Message(
@@ -53,20 +56,20 @@ async def process_audio_task(
             )
 
         except Exception as e:
-            print(f"[!] Critical error processing task {id}: {e}")
-            await update_db(id, AudioTaskUpdate(status=TaskStatus.FAILED))
-            raise e 
+            log.error("Critical error processing task %s: %s", task_id, str(e), exc_info=True)
+            await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))
+            raise  
 
 
 async def main():
     connection = None
     while not connection:
         try:
-            print(f"Connecting to async RabbitMQ at {settings.RABBITMQ_HOST}...")
+            log.info("Connecting to async RabbitMQ at %s...", settings.RABBITMQ_HOST)
             amqp_url = f"amqp://{settings.RABBITMQ_USER}:{settings.RABBITMQ_PASSWORD}@{settings.RABBITMQ_HOST}/"
             connection = await aio_pika.connect_robust(amqp_url)
         except Exception:
-            print("RabbitMQ is not ready yet. Retrying in 5 seconds...")
+            log.warning("RabbitMQ is not ready yet. Retrying in 5 seconds...")
             await asyncio.sleep(5)
 
     channel = await connection.channel()
@@ -77,7 +80,7 @@ async def main():
     await channel.declare_queue(settings.RABBITMQ_NLP_QUEUE, durable=True)
     exchange = channel.default_exchange
 
-    print(f"[*] Async STT Worker is running and waiting for messages in '{settings.RABBITMQ_STT_QUEUE}'. To exit press CTRL+C")
+    log.info("Async STT Worker is running and waiting for messages in '%s'. To exit press CTRL+C", settings.RABBITMQ_STT_QUEUE)
     
     async def on_message(message: aio_pika.abc.AbstractIncomingMessage):
         await process_audio_task(message, exchange)
@@ -89,7 +92,7 @@ async def main():
     except asyncio.CancelledError:
         pass
     finally:
-        print("\nClosing connection...")
+        log.info("Closing RabbitMQ connection...")
         await connection.close()
 
 if __name__ == "__main__":

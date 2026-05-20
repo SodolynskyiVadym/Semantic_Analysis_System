@@ -6,10 +6,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File, status
 from motor.motor_asyncio import AsyncIOMotorClient
  
-from config import settings
-from dependencies import RabbitDep, RepoDep
-from models import AudioTaskCreate, AudioTaskUpdate, AudioTaskResponse, TaskStatus
-from rabbit import rabbit_client
+from server.config import settings
+from server.dependencies import RabbitDep, RepoDep
+from server.models import AudioTaskCreate, AudioTaskUpdate, AudioTaskResponse, TaskStatus
+from server.rabbit import rabbit_client
 
 
 @asynccontextmanager

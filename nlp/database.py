@@ -1,7 +1,7 @@
 from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
-from nlp.config import settings
+from config import settings
 from nlp.models import AudioTask, AudioTaskUpdate
 
 client = AsyncIOMotorClient(settings.MONGO_CONNECTION_STRING)
