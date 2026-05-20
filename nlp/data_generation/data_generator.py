@@ -3,24 +3,16 @@ import json
 import time
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig, Part
-from dotenv import load_dotenv
 from promts import *
+from config import settings
 
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+TRAINING_DATA_PATH = settings.TRAINING_DATA_PATH
 
 
-
-load_dotenv(os.path.join(PROJECT_ROOT, "config.env"))
-load_dotenv(os.path.join(PROJECT_ROOT, "secret.env"), override=True)
-
-TRAINING_DATA_PATH = os.path.join(PROJECT_ROOT, os.getenv("TRAINING_DATA_PATH", "training_data"))
-
-
-PROJECT_ID = os.getenv("PROJECT_ID")
-LOCATION = os.getenv("LOCATION")
-MODEL = "gemini-2.5-pro"
+PROJECT_ID = settings.PROJECT_ID
+LOCATION = settings.LOCATION
+MODEL = settings.MODEL
 
 if not PROJECT_ID or not LOCATION:
     raise ValueError("PROJECT_ID and LOCATION must be set in the .env file")

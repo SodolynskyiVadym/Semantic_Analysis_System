@@ -49,7 +49,7 @@ async def process_audio_task(
                     body=nlp_message,
                     delivery_mode=aio_pika.DeliveryMode.PERSISTENT
                 ),
-                routing_key=settings.RABBITMQ_OUTPUT_QUEUE
+                routing_key=settings.RABBITMQ_NLP_QUEUE
             )
 
         except Exception as e:
@@ -72,12 +72,12 @@ async def main():
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=1)
 
-    stt_queue = await channel.declare_queue(settings.RABBITMQ_INPUT_QUEUE, durable=True)
+    stt_queue = await channel.declare_queue(settings.RABBITMQ_STT_QUEUE, durable=True)
     
-    await channel.declare_queue(settings.RABBITMQ_OUTPUT_QUEUE, durable=True)
+    await channel.declare_queue(settings.RABBITMQ_NLP_QUEUE, durable=True)
     exchange = channel.default_exchange
 
-    print(f"[*] Async STT Worker is running and waiting for messages in '{settings.RABBITMQ_INPUT_QUEUE}'. To exit press CTRL+C")
+    print(f"[*] Async STT Worker is running and waiting for messages in '{settings.RABBITMQ_STT_QUEUE}'. To exit press CTRL+C")
     
     async def on_message(message: aio_pika.abc.AbstractIncomingMessage):
         await process_audio_task(message, exchange)

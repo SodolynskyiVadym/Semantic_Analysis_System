@@ -1,10 +1,10 @@
 import json
 import asyncio
 import aio_pika
-from config import settings
-from database import update as update_db, get as get_db
-from models import AudioTaskUpdate, TaskStatus
-from nlp import run_ner
+from nlp.config import settings
+from nlp.database import update as update_db, get as get_db
+from nlp.models import AudioTaskUpdate, TaskStatus
+from nlp.nlp import run_ner
 
 
 async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):

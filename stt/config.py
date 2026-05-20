@@ -2,11 +2,11 @@ import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
-
 class Settings(BaseSettings):
     # TODO: add ENV variable(maybe)
+
+    CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
+    PROJECT_ROOT: str = os.path.dirname(CURRENT_DIR)
     AUDIO_DIR: str = os.path.join(PROJECT_ROOT, "uploads")
     MODEL_DIR: str = os.path.join(CURRENT_DIR, "model")
 
@@ -21,11 +21,11 @@ class Settings(BaseSettings):
     RABBITMQ_PORT: int = 5672
     RABBITMQ_USER: str = "user"
     RABBITMQ_PASSWORD: str = "password"
-    RABBITMQ_INPUT_QUEUE: str = "stt_queue"
-    RABBITMQ_OUTPUT_QUEUE: str = "nlp_queue"
+    RABBITMQ_STT_QUEUE: str = "stt_queue"
+    RABBITMQ_NLP_QUEUE: str = "nlp_queue"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=("config.env", "secret.env"),
         env_file_encoding="utf-8"
     )
 

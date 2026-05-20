@@ -1,7 +1,7 @@
 from transformers import pipeline
-from config import settings
-from models import AnalysisSegment, TranscribeSegment
-from nlp_text_normalizer import normalize_ner
+from nlp.config import settings
+from nlp.models import AnalysisSegment, TranscribeSegment
+from nlp.nlp_text_normalizer import normalize_ner
 
 print(f"[*] Loading NER model")
 try:

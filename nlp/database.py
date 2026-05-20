@@ -1,8 +1,8 @@
 from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
-from config import settings
-from models import AudioTask, AudioTaskUpdate
+from nlp.config import settings
+from nlp.models import AudioTask, AudioTaskUpdate
 
 client = AsyncIOMotorClient(settings.MONGO_CONNECTION_STRING)
 db = client[settings.MONGO_DB_NAME]
@@ -18,7 +18,6 @@ def _doc_to_audio_task(doc: dict) -> AudioTask:
         analysis=doc.get("analysis"),
         entities=doc.get("entities")
     )
-
 
 async def get(task_id: str) -> Optional[AudioTask]:
     doc = await audio_tasks_collection.find_one({"_id": task_id})

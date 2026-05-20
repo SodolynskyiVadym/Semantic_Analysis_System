@@ -2,13 +2,20 @@ import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
-
 class Settings(BaseSettings):
     # TODO: add ENV variable(maybe)
-    MODEL_DIR: str = os.path.join(CURRENT_DIR, "models", "military_ner_model_v9")
 
+    NLP_DIR: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nlp")
+
+    MODEL_DIR: str = os.path.join(NLP_DIR, "models")
+    BIO_FILE_PATH: str = os.path.join(NLP_DIR, "dataset_bio.txt")
+    TRAINING_DATA_PATH: str = os.path.join(NLP_DIR, "training_data")
+
+    PROJECT_ID: str
+    LOCATION: str
+    MODEL: str = "gemini-2.5-pro"
+
+    MODEL_CHECKPOINT: str = "xlm-roberta-base"
 
     MONGO_CONNECTION_STRING: str = "mongodb://admin:password@localhost:27017/"
     MONGO_DB_NAME: str = "analysis_db"
@@ -20,7 +27,7 @@ class Settings(BaseSettings):
     RABBITMQ_QUEUE: str = "nlp_queue"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=("config.env", "secret.env"),
         env_file_encoding="utf-8"
     )
 
