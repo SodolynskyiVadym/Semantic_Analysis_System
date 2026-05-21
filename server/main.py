@@ -1,28 +1,53 @@
+import asyncio
+import logging
 import os
 import uuid
 import shutil
 from contextlib import asynccontextmanager
- 
 from fastapi import FastAPI, HTTPException, UploadFile, File, status
 from motor.motor_asyncio import AsyncIOMotorClient
- 
+
 from server.config import settings
 from server.dependencies import RabbitDep, RepoDep
 from server.models import AudioTaskCreate, AudioTaskUpdate, AudioTaskResponse, TaskStatus
 from server.rabbit import rabbit_client
 
 
+import os
+import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from motor.motor_asyncio import AsyncIOMotorClient
+
+
+
+logger = logging.getLogger("uvicorn.error")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.mongo_client = AsyncIOMotorClient(settings.MONGO_CONNECTION_STRING)
-    await rabbit_client.connect()
-    app.state.rabbit = rabbit_client
     os.makedirs(settings.AUDIO_DIR, exist_ok=True)
-
+    
+    try:
+        logger.info("Connecting to RabbitMQ...")
+        await rabbit_client.connect()
+        app.state.rabbit = rabbit_client
+        
+        logger.info("Connecting to MongoDB...")
+        app.state.mongo_client = AsyncIOMotorClient(settings.MONGO_CONNECTION_STRING)
+        await app.state.mongo_client.admin.command('ping')
+        logger.info("All services connected successfully.")
+        
+    except Exception:
+        logger.exception("Critical error during service initialization:")
+        raise 
+    
     yield
 
-    await rabbit_client.disconnect()
-    app.state.mongo_client.close()
+    logger.info("Shutting down application, closing connections...")
+    if hasattr(app.state, 'rabbit'):
+        await app.state.rabbit.disconnect()
+    if hasattr(app.state, 'mongo_client'):
+        app.state.mongo_client.close()
 
 
 app = FastAPI(lifespan=lifespan)

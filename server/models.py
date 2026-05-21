@@ -21,9 +21,10 @@ class EntityType(str, Enum):
 
 
 class TranscribeSegment(BaseModel):
-    start_time: float
-    whisper_score: float
-    annotated_text: str 
+    start: float
+    end: float
+    confidence: float
+    text: str 
 
 
 class AnalysisSegment(BaseModel):

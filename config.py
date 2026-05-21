@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     # SHARED CONFIG
     # TODO: add ENV variable(maybe)
     CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
+    LOG_DIR: str = os.path.join(CURRENT_DIR, "logs")
     AUDIO_DIR: str = os.path.join(CURRENT_DIR, "uploads")
 
 
@@ -26,10 +27,10 @@ class Settings(BaseSettings):
     NLP_MODEL_PATH: str = os.path.join(NLP_DIR, "models", "military_ner_model_v9")
     BIO_FILE_PATH: str = os.path.join(NLP_DIR, "dataset_bio.txt")
     TRAINING_DATA_PATH: str = os.path.join(NLP_DIR, "training_data")
-    NLP_LOG_FILE: str = os.path.join(NLP_DIR, "nlp.log")
+    NLP_LOG_FILE: str = os.path.join(LOG_DIR, "nlp.log")
 
-    PROJECT_ID: str
-    LOCATION: str
+    PROJECT_ID: str = "some_id"
+    LOCATION: str = "some_location"
     GENERATION_DATA_MODEL: str = "gemini-2.5-pro"
 
     MODEL_CHECKPOINT: str = "xlm-roberta-base"
@@ -39,7 +40,7 @@ class Settings(BaseSettings):
     STT_DIR: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stt")
 
     STT_MODEL_DIR: str = os.path.join(STT_DIR, "model")
-    STT_LOG_FILE: str = os.path.join(STT_DIR, "stt.log")
+    STT_LOG_FILE: str = os.path.join(LOG_DIR, "stt.log")
 
     WHISPER_MODEL_SIZE: str = "large-v3"
     WHISPER_COMPUTE_TYPE: str = "int8"

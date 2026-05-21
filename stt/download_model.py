@@ -1,22 +1,15 @@
-from dotenv import load_dotenv
 from faster_whisper import WhisperModel
-import os
 from config import settings
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(CURRENT_DIR, "config.env"))
-load_dotenv(os.path.join(CURRENT_DIR, "secret.env"), override=True)
 
-MODEL_DIR = os.path.join("/app", os.getenv("MODEL_PATH", "model"))
-WHISPER_MODEL_SIZE = "large-v3"
+WHISPER_MODEL_SIZE = settings.WHISPER_MODEL_SIZE
 
-print(f"Downloading Whisper '{WHISPER_MODEL_SIZE}' model to {MODEL_DIR}...")
+print(f"Downloading Whisper '{WHISPER_MODEL_SIZE}' model to {settings.STT_MODEL_DIR}...")
 
 WhisperModel(
     WHISPER_MODEL_SIZE,
-    device="cuda",
     compute_type="int8",
-    download_root=MODEL_DIR
+    download_root=settings.STT_MODEL_DIR
 )
 
 print("Download complete!")

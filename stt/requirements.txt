@@ -1,5 +1,7 @@
+aio_pika==9.6.2
 faster_whisper
-pika==1.4.0
+motor==3.7.1
+pydantic==2.13.4
+pydantic-settings
 pymongo==4.17.0
 python-dotenv==1.2.2
-SQLAlchemy==2.0.49
