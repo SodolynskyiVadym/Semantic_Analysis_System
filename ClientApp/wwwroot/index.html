@@ -24,6 +24,28 @@
     </div>
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <script>
+        window.audioPlayer = {
+            seekTo: function (element, timeInSeconds) {
+                if (element) {
+                    var parsedTime = parseFloat(timeInSeconds.toString().replace(',', '.'));
+                    element.currentTime = parsedTime;
+                    element.play();
+                }
+            }
+        };
+    </script>
+
+    <script>
+        window.blazorDownloadFile = function (fileName, contentType, byteBase64) {
+            var link = document.createElement('a');
+            link.download = fileName;
+            link.href = "data:" + contentType + ";base64," + byteBase64;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 
 </body>
 

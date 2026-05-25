@@ -4,7 +4,8 @@ import os
 import uuid
 import shutil
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, UploadFile, File, status
+from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, status
+from fastapi.responses import FileResponse, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from api.config import settings
@@ -133,3 +134,12 @@ async def delete_audio_task(task_id: str, repo: RepoDep = None):
     deleted = await repo.delete(task_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Record not found")
+
+
+
+@app.get("/audio/{filename}")
+async def get_audio(filename: str):
+    file_path = os.path.join(settings.AUDIO_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Файл не знайдено")
+    return FileResponse(file_path, media_type="audio/wav")

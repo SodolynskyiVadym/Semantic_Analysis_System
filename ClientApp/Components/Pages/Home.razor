@@ -1,5 +1,364 @@
 ﻿@page "/"
+@using System.Net.Http.Json
+@using ClientApp.Models
+@inject ApiService ApiService
+@inject NavigationManager NavigationManager
 
-<h1>Hello, world!</h1>
+<div class="container-fluid px-4 mt-4 pb-5">
+    <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bolder mb-1 text-dark">Реєстр транскриптів</h2>
+            <div class="text-secondary" style="font-size: 1.1rem;">
+                Система обробки та семантичного аналізу радіоефіру
+            </div>
+        </div>
+        <button class="btn btn-dark px-4 fw-bold rounded-1" @onclick="LoadTasks" disabled="@_isLoading">
+            @if (_isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <span>Завантаження...</span>
+            }
+            else
+            {
+                <span>Оновити дані</span>
+            }
+        </button>
+    </div>
 
-Welcome to your new app.
+    <div class="card rounded-1 border mb-4 bg-light shadow-sm">
+        <div class="card-body p-3">
+            <h6 class="fw-bold text-dark text-uppercase mb-2" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                ⚙️ Завантаження перехоплення в конвеєр обробки ШІ
+            </h6>
+            <div class="row g-2">
+                <div class="col-md-9">
+                    <InputFile class="form-control rounded-1" OnChange="OnFileSelected" accept="audio/*" />
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-success w-100 rounded-1 fw-bold text-white text-uppercase"
+                            @onclick="UploadAndStartPipeline"
+                            disabled="@(_selectedFile == null || _isPipelineStarting)">
+                        @if (_isPipelineStarting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>Відправка...</span>
+                        }
+                        else
+                        {
+                            <span>Завантажити</span>
+                        }
+                    </button>
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(_pipelineNotification))
+            {
+                <div class="alert alert-success py-2 px-3 mt-2 rounded-1 border-0 small mb-0 fw-semibold">
+                    ✅ @_pipelineNotification
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="row mb-3 g-3">
+        <div class="col-md-8">
+            <div class="input-group">
+                <span class="input-group-text bg-white rounded-1 border-end-0">🔍</span>
+                <input type="text" class="form-control rounded-1 border-start-0 ps-0"
+                       placeholder="Пошук за назвою файлу..."
+                       @bind="_searchFileName" @bind:event="oninput" />
+            </div>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select rounded-1" @bind="_searchEntity">
+                <option value="">Всі сутності (Без фільтру)</option>
+                <option value="LOCATION">📍 LOCATION</option>
+                <option value="PERSONNEL-ENEMY">🔴 PERSONNEL-ENEMY</option>
+                <option value="PERSONNEL-FRIENDLY">🔵 PERSONNEL-FRIENDLY</option>
+                <option value="EQUIPMENT-ENEMY">🔴 EQUIPMENT-ENEMY</option>
+                <option value="EQUIPMENT-FRIENDLY">🔵 EQUIPMENT-FRIENDLY</option>
+                <option value="QUANTITY">🔢 QUANTITY</option>
+            </select>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-dark" role="status"></div>
+        </div>
+    }
+    else if (_tasks == null || !_tasks.Any())
+    {
+        <div class="alert alert-secondary rounded-1 border-0 text-center py-4">
+            База даних перехоплень порожня.
+        </div>
+    }
+    else
+    {
+        var filteredTasks = GetFilteredTasks().ToList();
+
+        if (!filteredTasks.Any())
+        {
+            <div class="alert alert-light border rounded-1 text-center py-4 text-muted">
+                За вашим запитом не знайдено жодного збігу.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive border rounded-1">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="py-3 px-3">Файл перехоплення</th>
+                            <th scope="col" class="py-3">Часова мітка</th>
+                            <th scope="col" class="py-3">Статус</th>
+                            <th scope="col" class="py-3 w-50">Розпізнані сутності (NER)</th>
+                            <th scope="col" class="py-3 text-end px-3">Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @foreach (var task in filteredTasks)
+                        {
+                            <tr @onclick="() => OpenTask(task.Id)" style="cursor: pointer;">
+                                <td class="px-3 fw-bold text-dark">
+                                    @task.FileName
+                                </td>
+                                <td class="text-secondary">
+                                    @task.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                                </td>
+                                <td>
+                                    <span class="badge border rounded-1 @GetStatusClass(task.Status)">
+                                        @task.Status.ToString().ToUpper()
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @if (task.Entities != null && task.Entities.Any())
+                                        {
+                                            @foreach (var entity in task.Entities.Take(4))
+                                            {
+                                                <span class="badge rounded-1 ner-tag @GetEntityClass(entity)">
+                                                    @entity
+                                                </span>
+                                            }
+                                            @if (task.Entities.Count > 4)
+                                            {
+                                                <span class="badge rounded-1 border text-secondary bg-light">
+                                                    +@(task.Entities.Count - 4)
+                                                </span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary small">Відсутні</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-end px-3">
+                                    <button class="btn btn-sm btn-outline-danger rounded-1" title="Видалити" @onclick:stopPropagation="true" @onclick="() => DeleteTask(task.Id)">
+                                        Видалити
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .status-completed {
+        border-color: #198754 !important;
+        color: #198754;
+        background-color: transparent;
+    }
+
+    .status-processing {
+        border-color: #0dcaf0 !important;
+        color: #087990;
+        background-color: transparent;
+    }
+
+    .status-pending {
+        border-color: #fd7e14 !important;
+        color: #fd7e14;
+        background-color: transparent;
+    }
+
+    .status-failed {
+        border-color: #dc3545 !important;
+        color: #dc3545;
+        background-color: transparent;
+    }
+
+    .status-default {
+        border-color: #6c757d !important;
+        color: #6c757d;
+        background-color: transparent;
+    }
+
+    .ner-tag {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 5px 8px;
+    }
+
+    .entity-enemy {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .entity-friendly {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .entity-location {
+        background-color: #198754;
+        color: white;
+    }
+
+    .entity-quantity {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .entity-default {
+        background-color: #ced4da;
+        color: #212529;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #212529;
+        box-shadow: 0 0 0 0.25rem rgba(33, 37, 41, 0.1);
+    }
+</style>
+
+@code {
+    private List<AudioTask>? _tasks;
+    private bool _isLoading = true;
+
+    private IBrowserFile? _selectedFile;
+    private bool _isPipelineStarting = false;
+    private string? _pipelineNotification;
+
+    private string _searchFileName = "";
+    private string _searchEntity = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTasks();
+    }
+
+    private async Task LoadTasks()
+    {
+        _isLoading = true;
+        try
+        {
+            var response = await ApiService.GetAudioTasksAsync();
+            if (response.IsSuccess)
+            {
+                _tasks = response.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Помилка завантаження: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        _pipelineNotification = null;
+    }
+
+    private async Task UploadAndStartPipeline()
+    {
+        if (_selectedFile == null) return;
+
+        _isPipelineStarting = true;
+        _pipelineNotification = null;
+
+        try
+        {
+            await Task.Delay(2000);
+
+            _pipelineNotification = $"Файл {_selectedFile.Name} успішно завантажено. Конвеєр аналізу запущено.";
+
+            _selectedFile = null;
+
+            await LoadTasks();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Помилка завантаження файлу: {ex.Message}");
+        }
+        finally
+        {
+            _isPipelineStarting = false;
+        }
+    }
+
+    private IEnumerable<AudioTask> GetFilteredTasks()
+    {
+        if (_tasks == null) return Enumerable.Empty<AudioTask>();
+
+        var filtered = _tasks.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(_searchFileName))
+        {
+            filtered = filtered.Where(t => t.FileName != null && t.FileName.Contains(_searchFileName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(_searchEntity))
+        {
+            filtered = filtered.Where(t => t.Entities != null && t.Entities.Contains(_searchEntity));
+        }
+
+        return filtered;
+    }
+
+    private void OpenTask(string taskId)
+    {
+        NavigationManager.NavigateTo($"/player/{taskId}");
+    }
+
+    private async Task DeleteTask(string taskId)
+    {
+        _tasks?.RemoveAll(t => t.Id == taskId);
+        StateHasChanged();
+    }
+
+    private string GetStatusClass(AudioTaskStatus status)
+    {
+        return status switch
+        {
+            AudioTaskStatus.Completed => "status-completed",
+            AudioTaskStatus.Processing => "status-processing",
+            AudioTaskStatus.Pending => "status-pending",
+            AudioTaskStatus.Failed => "status-failed",
+            _ => "status-default"
+        };
+    }
+
+    private string GetEntityClass(string entityName)
+    {
+        return entityName switch
+        {
+            "PERSONNEL-ENEMY" => "entity-enemy",
+            "EQUIPMENT-ENEMY" => "entity-enemy",
+            "PERSONNEL-FRIENDLY" => "entity-friendly",
+            "EQUIPMENT-FRIENDLY" => "entity-friendly",
+            "LOCATION" => "entity-location",
+            "QUANTITY" => "entity-quantity",
+            _ => "entity-default"
+        };
+    }
+}

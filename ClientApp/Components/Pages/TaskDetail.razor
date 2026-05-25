@@ -1,0 +1,224 @@
+﻿@page "/player/{TaskId}"
+@using ClientApp.Models
+@using System.Linq
+@inject ApiService ApiService
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject ClientApp.Services.ExportService ExportService
+
+<div class="container-fluid px-4 mt-4 pb-5">
+    <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bolder mb-1 text-dark">Транскрипт: @(_viewTask?.FileName ?? "Завантаження...")</h2>
+            <div class="text-secondary" style="font-size: 1.1rem;">
+                Детальний аналіз та семантична розмітка
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-dark px-4 fw-bold rounded-1" @onclick='() => Nav.NavigateTo("/")'>
+                🔙 До реєстру
+            </button>
+            <button class="btn btn-dark px-4 fw-bold rounded-1 d-flex align-items-center" @onclick="LoadAndTransformTask" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Оновлення...</span>
+                }
+                else
+                {
+                    <span>🔄 Оновити дані</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-dark" role="status"></div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger rounded-1 border-0 fw-semibold">@_errorMessage</div>
+    }
+    else if (_viewTask != null)
+    {
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card rounded-1 border shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold text-dark text-uppercase mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                            Аудіозапис перехоплення
+                        </h6>
+                        <audio @ref="_audioElement" controls class="w-100 mb-4 rounded-1">
+                            <source src="http://localhost:8000/audio/@_viewTask.FileName?v=@Guid.NewGuid()" type="audio/wav">
+                        </audio>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary fw-semibold">Статус:</span>
+                            <span class="badge border rounded-1 @GetStatusClass(_viewTask.Status)">
+                                @_viewTask.Status.ToString().ToUpper()
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <span class="text-secondary fw-semibold">Створено:</span>
+                            <span class="font-monospace text-dark">@_viewTask.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+
+                        <h6 class="fw-bold text-dark text-uppercase mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                            Легенда сутностей (NER)
+                        </h6>
+                        <div class="d-flex flex-wrap gap-2 mb-4">
+                            <span class="badge rounded-1 ner-tag LOCATION">LOCATION</span>
+                            <span class="badge rounded-1 ner-tag PERSONNEL-ENEMY">PERSONNEL-ENEMY</span>
+                            <span class="badge rounded-1 ner-tag PERSONNEL-FRIENDLY">PERSONNEL-FRIENDLY</span>
+                            <span class="badge rounded-1 ner-tag EQUIPMENT-FRIENDLY">EQUIPMENT-FRIENDLY</span>
+                            <span class="badge rounded-1 ner-tag QUANTITY">QUANTITY</span>
+                        </div>
+
+                        <hr class="mb-4" />
+
+                        <h6 class="fw-bold text-dark text-uppercase mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                            Управління даними
+                        </h6>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-dark fw-bold rounded-1 text-start" @onclick='() => Nav.NavigateTo($"/player/{TaskId}/edit/transcript")' disabled="@_isLoading">
+                                📝 Виправити текст (STT)
+                            </button>
+                            <button class="btn btn-dark fw-bold rounded-1 text-start" @onclick='() => Nav.NavigateTo($"/player/{TaskId}/edit/entities")' disabled="@_isLoading">
+                                🏷️ Розмітити сутності (NER)
+                            </button>
+
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportJson">
+                                    🗃️ Експорт JSON
+                                </button>
+                                <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportPdf">
+                                    📄 Експорт PDF
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card rounded-1 border shadow-sm h-100">
+                    <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+                        <h6 class="fw-bold mb-0 text-dark text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                            Повний текст ефіру з маркуванням
+                        </h6>
+                        <small class="text-secondary fw-semibold">Клікніть на слово для переходу в аудіо</small>
+                    </div>
+
+                    <div class="card-body transcript-area p-4">
+                        @if (_viewTask.Transcription == null || !_viewTask.Transcription.Any())
+                        {
+                            <div class="alert alert-light border rounded-1 text-center py-4 text-muted">
+                                Текст транскрибації відсутній.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var segment in _viewTask.Transcription)
+                            {
+                                <div class="mb-3 d-flex align-items-start">
+                                    <span class="badge border bg-light text-secondary font-monospace me-3 mt-2 rounded-1" style="font-size: 0.9rem; min-width: 60px;">
+                                        @FormatTime(segment.Start)
+                                    </span>
+
+                                    <div class="words-flow text-dark" style="font-size: 1.15rem; line-height: 2.2;">
+                                        @foreach (var word in segment.Transcribe)
+                                        {
+                                            <span class="word-span @word.EntityGroup rounded-1"
+                                                  @onclick="() => SeekTo(segment.Start)">
+                                                @word.Text
+                                            </span>
+                                            @(" ")
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string TaskId { get; set; } = "";
+
+    private ViewAudioTask? _viewTask;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+    private ElementReference _audioElement;
+    private AudioTask? _rawServerData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAndTransformTask();
+    }
+
+    private async Task LoadAndTransformTask()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        var response = await ApiService.GetAudioTaskByIdAsync(TaskId);
+
+        if (response.IsSuccess && response.Data != null)
+        {
+            _rawServerData = response.Data;
+            _viewTask = TranscriptNormalizer.ToViewModel(response.Data);
+        }
+        else
+        {
+            _errorMessage = response.ErrorMessage ?? "Не вдалося завантажити дані завдання.";
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task SeekTo(double seconds)
+    {
+        await JS.InvokeVoidAsync("audioPlayer.seekTo", _audioElement, seconds);
+    }
+
+    private string FormatTime(double seconds)
+    {
+        var time = TimeSpan.FromSeconds(seconds);
+        return time.ToString(@"mm\:ss");
+    }
+
+    private string GetStatusClass(AudioTaskStatus? status)
+    {
+        return status switch
+        {
+            AudioTaskStatus.Completed => "status-completed",
+            AudioTaskStatus.Processing => "status-processing",
+            AudioTaskStatus.Pending => "status-pending",
+            AudioTaskStatus.Failed => "status-failed",
+            _ => "status-default"
+        };
+    }
+
+    private async Task ExportJson()
+    {
+        if (_rawServerData != null)
+        {
+            await ExportService.ExportToJsonAsync(_rawServerData);
+        }
+    }
+
+    private async Task ExportPdf()
+    {
+        if (_viewTask != null)
+        {
+            await ExportService.ExportToPdfAsync(_viewTask);
+        }
+    }
+}

@@ -42,8 +42,13 @@ class AudioTaskRepository:
             query["status"] = status
         if entity:
             query["entities"] = {"$in": [entity]}
+        
+        projection = {
+            "transcription": 0,
+            "analysis": 0
+        }
 
-        cursor = self.collection.find(query).sort("created_at", -1)
+        cursor = self.collection.find(query, projection).sort("created_at", -1)
         docs = await cursor.to_list(length=100)
         return [_doc_to_audio_task_response(d) for d in docs]
 

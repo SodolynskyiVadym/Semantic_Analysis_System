@@ -1,0 +1,313 @@
+﻿@page "/player/{TaskId}/edit/entities"
+@using ClientApp.Models
+@inject ApiService ApiService
+@inject NavigationManager Nav
+
+<div class="container-fluid px-4 mt-4 pb-5">
+    <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bolder mb-1 text-dark">Редактор сутностей (NER)</h2>
+            <div class="text-secondary" style="font-size: 1.1rem;">
+                Ручна семантична розмітка транскрипту
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-dark px-4 fw-bold rounded-1" @onclick='() => Nav.NavigateTo($"/player/{TaskId}")'>
+                Скасувати
+            </button>
+            <button class="btn btn-dark px-4 fw-bold rounded-1 d-flex align-items-center" @onclick="SaveEntities" disabled="@_isSaving">
+                @if (_isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Збереження...</span>
+                }
+                else
+                {
+                    <span>💾 Зберегти зміни</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-dark" role="status"></div>
+        </div>
+    }
+    else if (_localSegments != null)
+    {
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card rounded-1 border shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold text-dark text-uppercase mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                            Активний інструмент
+                        </h6>
+                        <p class="text-secondary small mb-3">Оберіть категорію, а потім клікайте на слова в тексті праворуч.</p>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn @(_selectedEntity == "" ? "btn-dark active-tool" : "btn-outline-dark")"
+                                    @onclick='() => _selectedEntity = ""'>
+                                🧹 Очистити маркер
+                            </button>
+
+                            <hr class="my-2" />
+
+                            <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn LOCATION @(_selectedEntity == "LOCATION" ? "active-tool" : "inactive-tool")"
+                                    @onclick='() => _selectedEntity = "LOCATION"'>
+                                LOCATION
+                            </button>
+                            <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn PERSONNEL-ENEMY @(_selectedEntity == "PERSONNEL-ENEMY" ? "active-tool" : "inactive-tool")"
+                                    @onclick='() => _selectedEntity = "PERSONNEL-ENEMY"'>
+                                PERSONNEL-ENEMY
+                            </button>
+                            <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn PERSONNEL-FRIENDLY @(_selectedEntity == "PERSONNEL-FRIENDLY" ? "active-tool" : "inactive-tool")"
+                                    @onclick='() => _selectedEntity = "PERSONNEL-FRIENDLY"'>
+                                PERSONNEL-FRIENDLY
+                            </button>
+                            <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn EQUIPMENT-ENEMY @(_selectedEntity == "EQUIPMENT-ENEMY" ? "active-tool" : "inactive-tool")"
+                                    @onclick='() => _selectedEntity = "EQUIPMENT-ENEMY"'>
+                                EQUIPMENT-ENEMY
+                            </button>
+                            <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn EQUIPMENT-FRIENDLY @(_selectedEntity == "EQUIPMENT-FRIENDLY" ? "active-tool" : "inactive-tool")"
+                                    @onclick='() => _selectedEntity = "EQUIPMENT-FRIENDLY"'>
+                                EQUIPMENT-FRIENDLY
+                            </button>
+                            <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn QUANTITY @(_selectedEntity == "QUANTITY" ? "active-tool" : "inactive-tool")"
+                                    @onclick='() => _selectedEntity = "QUANTITY"'>
+                                QUANTITY
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="card rounded-1 border shadow-sm">
+                    <div class="card-header bg-light border-bottom py-3 px-4">
+                        <h6 class="fw-bold mb-0 text-dark text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                            Робоча область транскрипту
+                        </h6>
+                    </div>
+
+                    <div class="card-body p-4 transcript-area">
+                        @foreach (var segment in _localSegments)
+                        {
+                            <div class="mb-4">
+                                <div class="words-flow text-dark" style="font-size: 1.15rem; line-height: 2.2;">
+                                    @foreach (var word in segment.WordsList)
+                                    {
+                                        <span class="edit-word-span rounded-1 @word.EntityGroup"
+                                              @onclick="() => word.EntityGroup = string.IsNullOrEmpty(_selectedEntity) ? null : _selectedEntity">
+                                            @word.Text
+                                        </span>
+                                        @(" ")
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .transcript-area {
+        min-height: 60vh;
+        background-color: #ffffff;
+    }
+
+    .edit-word-span {
+        cursor: pointer;
+        padding: 2px 6px;
+        display: inline-block;
+        user-select: none;
+        transition: background-color 0.1s ease, color 0.1s ease;
+        border: 1px solid transparent; 
+    }
+
+        .edit-word-span:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+            color: #000;
+        }
+
+    .palette-btn {
+        padding: 8px 12px;
+        border-width: 2px;
+        transition: all 0.15s ease;
+    }
+
+    .active-tool {
+        border-color: #000 !important;
+        box-shadow: 2px 2px 0px rgba(0,0,0,0.8);
+        transform: translateY(-2px);
+    }
+
+    .inactive-tool {
+        opacity: 0.65;
+        border-color: transparent !important;
+    }
+
+        .inactive-tool:hover {
+            opacity: 0.9;
+        }
+
+    .LOCATION {
+        background-color: #198754;
+        color: white;
+        font-weight: 600;
+    }
+
+    .PERSONNEL-ENEMY {
+        background-color: #dc3545;
+        color: white;
+        font-weight: 600;
+    }
+
+    .PERSONNEL-FRIENDLY {
+        background-color: #0d6efd;
+        color: white;
+        font-weight: 600;
+    }
+
+    .EQUIPMENT-ENEMY {
+        background-color: #dc3545;
+        color: white;
+        font-weight: 600;
+    }
+
+    .EQUIPMENT-FRIENDLY {
+        background-color: #0d6efd;
+        color: white;
+        font-weight: 600;
+    }
+
+    .QUANTITY {
+        background-color: #6c757d;
+        color: white;
+        font-weight: 600;
+    }
+</style>
+
+@code {
+    [Parameter] public string TaskId { get; set; } = "";
+
+    private AudioTask? _rawServerData;
+    private List<LocalEntitySegment>? _localSegments;
+
+    private string _selectedEntity = "LOCATION";
+
+    private bool _isLoading = true;
+    private bool _isSaving = false;
+
+    private class LocalEntitySegment { public List<LocalWord> WordsList { get; set; } = new(); }
+    private class LocalWord { public string Text { get; set; } public string? EntityGroup { get; set; } }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await ApiService.GetAudioTaskByIdAsync(TaskId);
+        if (response.IsSuccess && response.Data != null)
+        {
+            _rawServerData = response.Data;
+            _localSegments = new List<LocalEntitySegment>();
+
+            if (_rawServerData.Transcription != null)
+            {
+                int globalIndex = 0;
+                foreach (var seg in _rawServerData.Transcription)
+                {
+                    var localSeg = new LocalEntitySegment();
+                    if (!string.IsNullOrEmpty(seg.Text))
+                    {
+                        var tokens = seg.Text.Split(' ');
+                        int localIndex = 0;
+                        foreach (var token in tokens)
+                        {
+                            string? entGroup = null;
+                            int wStart = globalIndex + localIndex;
+                            int wEnd = wStart + token.Length;
+
+                            if (_rawServerData.Analysis != null)
+                            {
+                                var matched = _rawServerData.Analysis.FirstOrDefault(a => a.Start < wEnd && a.End > wStart);
+                                if (matched != null) entGroup = matched.EntityGroup;
+                            }
+                            localSeg.WordsList.Add(new LocalWord { Text = token, EntityGroup = entGroup });
+                            localIndex += token.Length + 1;
+                        }
+                    }
+                    _localSegments.Add(localSeg);
+                    globalIndex += seg.Text.Length + 1;
+                }
+            }
+        }
+        _isLoading = false;
+    }
+
+    private async Task SaveEntities()
+    {
+        if (_rawServerData == null || _localSegments == null) return;
+        _isSaving = true;
+
+        var payloadAnalysis = new List<AnalysisSegmentDto>();
+        int globalCharCounter = 0;
+
+        foreach (var seg in _localSegments)
+        {
+            string reconstructedText = string.Join(" ", seg.WordsList.Select(w => w.Text));
+            int localOffset = 0;
+
+            for (int i = 0; i < seg.WordsList.Count; i++)
+            {
+                var currentWord = seg.WordsList[i];
+                int wordLen = currentWord.Text.Length;
+
+                if (!string.IsNullOrEmpty(currentWord.EntityGroup))
+                {
+                    int entStart = globalCharCounter + localOffset;
+                    int entEnd = entStart + wordLen;
+                    string combinedWordText = currentWord.Text;
+
+                    while (i + 1 < seg.WordsList.Count && seg.WordsList[i + 1].EntityGroup == currentWord.EntityGroup)
+                    {
+                        i++;
+                        localOffset += wordLen + 1;
+                        wordLen = seg.WordsList[i].Text.Length;
+                        entEnd = globalCharCounter + localOffset + wordLen;
+                        combinedWordText += " " + seg.WordsList[i].Text;
+                    }
+
+                    payloadAnalysis.Add(new AnalysisSegmentDto
+                    {
+                        Start = entStart,
+                        End = entEnd,
+                        Word = combinedWordText,
+                        EntityGroup = currentWord.EntityGroup,
+                        Score = 1.0
+                    });
+                }
+                localOffset += wordLen + 1;
+            }
+            globalCharCounter += reconstructedText.Length + 1;
+        }
+
+        var updatePayload = new AudioTaskUpdateRequest
+        {
+            Id = _rawServerData.Id,
+            FileName = _rawServerData.FileName,
+            Status = _rawServerData.Status,
+            Transcription = _rawServerData.Transcription?.Select(t => new TranscribeSegmentDto { Start = t.Start, End = t.End, Confidence = t.Confidence, Text = t.Text }).ToList(),
+            Analysis = payloadAnalysis,
+            Entities = payloadAnalysis.Select(a => a.EntityGroup).Distinct().ToList()
+        };
+
+        var result = await ApiService.UpdateAudioTaskAsync(updatePayload);
+        if (result.IsSuccess) Nav.NavigateTo($"/player/{TaskId}");
+
+        _isSaving = false;
+    }
+}
