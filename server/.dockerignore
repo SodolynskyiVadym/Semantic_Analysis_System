@@ -1,21 +1,27 @@
-__pycache__
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-.env*
-pip-log.txt
-pip-delete-this-directory.txt
-.tox
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*,cover
-*.log
-.git*
-tests
-scripts
-postman
-./postgres-data
+.pytest_cache/
+*.env
+
+
+# STT Section
+stt/model/
+stt/__pycache__/
+
+
+
+# NLP Section
+nlp/__pycache__/
+nlp/training_data/
+nlp/data_generation/
+nlp/model_training/
+nlp/dataset_bio.txt
+nlp/models/*
+!nlp/models/military_ner_model_v9/
+
+
+# API Section
+api/__pycache__/
+

@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13.7-management
+    container_name: rabbitmq
+    hostname: rabbitmq-server
+    ports:
+      - "5672:5672"   
+      - "15672:15672" 
+    volumes:
+      - ./rabbitmq/data/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    restart: always
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongo_database
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./database/db_data:/data/db
+    restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  
+
+  stt:
+    build:
+      context: .
+      dockerfile: ./stt/Dockerfile
+    runtime: nvidia
+    container_name: stt-module
+    environment:
+      - PYTHONPATH=/app
+      - RABBITMQ_HOST=rabbitmq
+      - MONGO_CONNECTION_STRING=mongodb://admin:password@mongodb:27017/
+      - AUDIO_DIR=/app/uploads
+      - STT_DIR=/app/stt
+      - STT_MODEL_DIR=/app/stt/model
+      - STT_LOG_FILE=/app/logs/stt.log
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+
+  nlp:
+    build:
+        context: .
+        dockerfile: ./nlp/Dockerfile
+    runtime: nvidia
+    container_name: nlp-module
+    environment:
+      - PYTHONPATH=/app
+      - RABBITMQ_HOST=rabbitmq
+      - MONGO_CONNECTION_STRING=mongodb://admin:password@mongodb:27017/
+      - NLP_DIR=/app/NLP
+      - NLP_MODEL_PATH=/app/nlp/models/military_ner_model_v9
+      - NLP_LOG_FILE=/app/logs/nlp.log
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+  
+
+  api:
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+    container_name: api
+    environment:
+      - PYTHONPATH=/app
+      - RABBITMQ_HOST=rabbitmq
+      - MONGO_CONNECTION_STRING=mongodb://admin:password@mongodb:27017/
+      - AUDIO_DIR=/app/uploads
+    volumes:
+      - ./uploads:/app/uploads
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
