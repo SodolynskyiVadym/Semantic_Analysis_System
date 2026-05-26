@@ -1,14 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json.Serialization;
-
-namespace ClientApp.Models
+﻿namespace ClientApp.Models
 {
-    public record TranscribeSegment(
-        [property: JsonPropertyName("start")] double Start,
-        [property: JsonPropertyName("end")] double End,
-        [property: JsonPropertyName("confidence")] double Confidence,
-        [property: JsonPropertyName("text")] string Text
-);
+    using System.Text.Json.Serialization;
+
+    public record TranscribeSegment
+    {
+        [JsonPropertyName("start")]
+        public double Start { get; set; }
+
+        [JsonPropertyName("end")]
+        public double End { get; set; }
+
+        [JsonPropertyName("confidence")]
+        public double Confidence { get; set; }
+
+        [JsonPropertyName("text")]
+        public string Text { get; set; } = string.Empty;
+    }
 }

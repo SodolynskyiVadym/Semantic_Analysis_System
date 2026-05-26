@@ -6,7 +6,7 @@ from enum import Enum
 
 class TaskStatus(str, Enum):
     PENDING = "PENDING"
-    PROCESSING = "TRANSCRIBED"
+    TRANSCRIBED = "TRANSCRIBED"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
@@ -47,6 +47,7 @@ class AudioTaskUpdate(BaseModel):
     transcription: Optional[list[TranscribeSegment]] = None
     analysis: Optional[list[AnalysisSegment]] = None
     entities: Optional[list[EntityType]] = None
+    status: Optional[TaskStatus] = None
 
 
 class AudioTaskResponse(BaseModel):

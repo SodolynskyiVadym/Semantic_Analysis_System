@@ -17,7 +17,6 @@ namespace ClientApp.Services
             QuestPDF.Settings.License = LicenseType.Community;
         }
 
-        // 1. Експорт сирого AudioTask у JSON
         public async Task ExportToJsonAsync(AudioTask task)
         {
             var options = new JsonSerializerOptions

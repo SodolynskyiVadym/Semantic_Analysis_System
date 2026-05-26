@@ -58,18 +58,18 @@ class AudioTaskRepository:
         return _doc_to_audio_task_response(doc) if doc else None
 
 
-    async def update(
+    async def update_analysis(
         self, task_id: str, payload: AudioTaskUpdate
     ) -> Optional[AudioTaskResponse]:
+        payload.status = TaskStatus.COMPLETED
+        payload.transcription = None
+
         changes = payload.model_dump(exclude_none=True)
         if not changes:
-            return await self.get(task_id)
+            return None
 
         if "analysis" in changes:
             changes["analysis"] = [s.model_dump() for s in payload.analysis]
-        
-        if "transcription" in changes:
-            changes["transcription"] = [s.model_dump() for s in payload.analysis]
 
         result = await self.collection.find_one_and_update(
             {"_id": task_id},
@@ -77,6 +77,39 @@ class AudioTaskRepository:
             return_document=True,
         )
         return _doc_to_audio_task_response(result) if result else None
+    
+
+    async def update_transcription(
+        self, task_id: str, payload: AudioTaskUpdate
+    ) -> Optional[AudioTaskResponse]:
+        payload.status = TaskStatus.TRANSCRIBED
+        changes = payload.model_dump(exclude_none=True)
+        
+        if not changes:
+            return None
+        
+        if "transcription" in changes:
+            changes["transcription"] = [s.model_dump() for s in payload.transcription]
+
+        changes.pop("analysis", None)
+        changes.pop("entities", None)
+
+        update_query = {
+            "$set": changes,
+            "$unset": {
+                "analysis": "",
+                "entities": ""
+            }
+        }
+
+        result = await self.collection.find_one_and_update(
+            {"_id": task_id},
+            update_query,
+            return_document=True,
+        )
+        
+        return _doc_to_audio_task_response(result) if result else None
+    
 
 
     async def delete(self, task_id: str) -> bool:

@@ -35,7 +35,7 @@
             <div class="spinner-border text-dark" role="status"></div>
         </div>
     }
-    else if (_localSegments != null)
+    else if (_viewTask?.Transcription != null)
     {
         <div class="row g-4">
             <div class="col-md-3">
@@ -92,11 +92,11 @@
                     </div>
 
                     <div class="card-body p-4 transcript-area">
-                        @foreach (var segment in _localSegments)
+                        @foreach (var segment in _viewTask.Transcription)
                         {
                             <div class="mb-4">
                                 <div class="words-flow text-dark" style="font-size: 1.15rem; line-height: 2.2;">
-                                    @foreach (var word in segment.WordsList)
+                                    @foreach (var word in segment.Transcribe)
                                     {
                                         <span class="edit-word-span rounded-1 @word.EntityGroup"
                                               @onclick="() => word.EntityGroup = string.IsNullOrEmpty(_selectedEntity) ? null : _selectedEntity">
@@ -114,156 +114,45 @@
     }
 </div>
 
-<style>
-    .transcript-area {
-        min-height: 60vh;
-        background-color: #ffffff;
-    }
-
-    .edit-word-span {
-        cursor: pointer;
-        padding: 2px 6px;
-        display: inline-block;
-        user-select: none;
-        transition: background-color 0.1s ease, color 0.1s ease;
-        border: 1px solid transparent; 
-    }
-
-        .edit-word-span:hover {
-            background-color: #e9ecef;
-            border-color: #adb5bd;
-            color: #000;
-        }
-
-    .palette-btn {
-        padding: 8px 12px;
-        border-width: 2px;
-        transition: all 0.15s ease;
-    }
-
-    .active-tool {
-        border-color: #000 !important;
-        box-shadow: 2px 2px 0px rgba(0,0,0,0.8);
-        transform: translateY(-2px);
-    }
-
-    .inactive-tool {
-        opacity: 0.65;
-        border-color: transparent !important;
-    }
-
-        .inactive-tool:hover {
-            opacity: 0.9;
-        }
-
-    .LOCATION {
-        background-color: #198754;
-        color: white;
-        font-weight: 600;
-    }
-
-    .PERSONNEL-ENEMY {
-        background-color: #dc3545;
-        color: white;
-        font-weight: 600;
-    }
-
-    .PERSONNEL-FRIENDLY {
-        background-color: #0d6efd;
-        color: white;
-        font-weight: 600;
-    }
-
-    .EQUIPMENT-ENEMY {
-        background-color: #dc3545;
-        color: white;
-        font-weight: 600;
-    }
-
-    .EQUIPMENT-FRIENDLY {
-        background-color: #0d6efd;
-        color: white;
-        font-weight: 600;
-    }
-
-    .QUANTITY {
-        background-color: #6c757d;
-        color: white;
-        font-weight: 600;
-    }
-</style>
-
 @code {
     [Parameter] public string TaskId { get; set; } = "";
 
-    private AudioTask? _rawServerData;
-    private List<LocalEntitySegment>? _localSegments;
+    private ViewAudioTask? _viewTask;
 
     private string _selectedEntity = "LOCATION";
 
     private bool _isLoading = true;
     private bool _isSaving = false;
 
-    private class LocalEntitySegment { public List<LocalWord> WordsList { get; set; } = new(); }
-    private class LocalWord { public string Text { get; set; } public string? EntityGroup { get; set; } }
-
     protected override async Task OnInitializedAsync()
     {
         var response = await ApiService.GetAudioTaskByIdAsync(TaskId);
         if (response.IsSuccess && response.Data != null)
         {
-            _rawServerData = response.Data;
-            _localSegments = new List<LocalEntitySegment>();
-
-            if (_rawServerData.Transcription != null)
-            {
-                int globalIndex = 0;
-                foreach (var seg in _rawServerData.Transcription)
-                {
-                    var localSeg = new LocalEntitySegment();
-                    if (!string.IsNullOrEmpty(seg.Text))
-                    {
-                        var tokens = seg.Text.Split(' ');
-                        int localIndex = 0;
-                        foreach (var token in tokens)
-                        {
-                            string? entGroup = null;
-                            int wStart = globalIndex + localIndex;
-                            int wEnd = wStart + token.Length;
-
-                            if (_rawServerData.Analysis != null)
-                            {
-                                var matched = _rawServerData.Analysis.FirstOrDefault(a => a.Start < wEnd && a.End > wStart);
-                                if (matched != null) entGroup = matched.EntityGroup;
-                            }
-                            localSeg.WordsList.Add(new LocalWord { Text = token, EntityGroup = entGroup });
-                            localIndex += token.Length + 1;
-                        }
-                    }
-                    _localSegments.Add(localSeg);
-                    globalIndex += seg.Text.Length + 1;
-                }
-            }
+            _viewTask = TranscriptNormalizer.ToViewModel(response.Data);
         }
         _isLoading = false;
     }
 
     private async Task SaveEntities()
     {
-        if (_rawServerData == null || _localSegments == null) return;
+        if (_viewTask?.Transcription == null) return;
+
         _isSaving = true;
 
-        var payloadAnalysis = new List<AnalysisSegmentDto>();
+        var payloadAnalysis = new List<AnalysisSegment>();
         int globalCharCounter = 0;
 
-        foreach (var seg in _localSegments)
+        foreach (var seg in _viewTask.Transcription)
         {
-            string reconstructedText = string.Join(" ", seg.WordsList.Select(w => w.Text));
+            if (seg.Transcribe == null) continue;
+
+            string reconstructedText = string.Join(" ", seg.Transcribe.Select(w => w.Text));
             int localOffset = 0;
 
-            for (int i = 0; i < seg.WordsList.Count; i++)
+            for (int i = 0; i < seg.Transcribe.Count; i++)
             {
-                var currentWord = seg.WordsList[i];
+                var currentWord = seg.Transcribe[i];
                 int wordLen = currentWord.Text.Length;
 
                 if (!string.IsNullOrEmpty(currentWord.EntityGroup))
@@ -272,40 +161,36 @@
                     int entEnd = entStart + wordLen;
                     string combinedWordText = currentWord.Text;
 
-                    while (i + 1 < seg.WordsList.Count && seg.WordsList[i + 1].EntityGroup == currentWord.EntityGroup)
+                    while (i + 1 < seg.Transcribe.Count && seg.Transcribe[i + 1].EntityGroup == currentWord.EntityGroup)
                     {
                         i++;
                         localOffset += wordLen + 1;
-                        wordLen = seg.WordsList[i].Text.Length;
+                        wordLen = seg.Transcribe[i].Text.Length;
                         entEnd = globalCharCounter + localOffset + wordLen;
-                        combinedWordText += " " + seg.WordsList[i].Text;
+                        combinedWordText += " " + seg.Transcribe[i].Text;
                     }
 
-                    payloadAnalysis.Add(new AnalysisSegmentDto
-                    {
-                        Start = entStart,
-                        End = entEnd,
-                        Word = combinedWordText,
-                        EntityGroup = currentWord.EntityGroup,
-                        Score = 1.0
-                    });
+                    payloadAnalysis.Add(new AnalysisSegment(
+                        entStart,
+                        entEnd,
+                        combinedWordText,
+                        1.0,
+                        currentWord.EntityGroup
+                    ));
                 }
                 localOffset += wordLen + 1;
             }
             globalCharCounter += reconstructedText.Length + 1;
         }
 
-        var updatePayload = new AudioTaskUpdateRequest
+        var updatePayload = new AudioTaskUpdate
         {
-            Id = _rawServerData.Id,
-            FileName = _rawServerData.FileName,
-            Status = _rawServerData.Status,
-            Transcription = _rawServerData.Transcription?.Select(t => new TranscribeSegmentDto { Start = t.Start, End = t.End, Confidence = t.Confidence, Text = t.Text }).ToList(),
             Analysis = payloadAnalysis,
             Entities = payloadAnalysis.Select(a => a.EntityGroup).Distinct().ToList()
         };
 
-        var result = await ApiService.UpdateAudioTaskAsync(updatePayload);
+        var result = await ApiService.UpdateAnalysisAudioTaskAsync(TaskId, updatePayload);
+
         if (result.IsSuccess) Nav.NavigateTo($"/player/{TaskId}");
 
         _isSaving = false;

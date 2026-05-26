@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     RABBITMQ_USER: str = "user"
     RABBITMQ_PASSWORD: str = "password"
     RABBITMQ_STT_QUEUE: str = "stt_queue"
+    RABBITMQ_NLP_QUEUE: str = "nlp_queue"
 
 
     model_config = SettingsConfigDict(

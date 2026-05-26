@@ -168,73 +168,6 @@
     }
 </div>
 
-<style>
-    .status-completed {
-        border-color: #198754 !important;
-        color: #198754;
-        background-color: transparent;
-    }
-
-    .status-processing {
-        border-color: #0dcaf0 !important;
-        color: #087990;
-        background-color: transparent;
-    }
-
-    .status-pending {
-        border-color: #fd7e14 !important;
-        color: #fd7e14;
-        background-color: transparent;
-    }
-
-    .status-failed {
-        border-color: #dc3545 !important;
-        color: #dc3545;
-        background-color: transparent;
-    }
-
-    .status-default {
-        border-color: #6c757d !important;
-        color: #6c757d;
-        background-color: transparent;
-    }
-
-    .ner-tag {
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        padding: 5px 8px;
-    }
-
-    .entity-enemy {
-        background-color: #dc3545;
-        color: white;
-    }
-
-    .entity-friendly {
-        background-color: #0d6efd;
-        color: white;
-    }
-
-    .entity-location {
-        background-color: #198754;
-        color: white;
-    }
-
-    .entity-quantity {
-        background-color: #6c757d;
-        color: white;
-    }
-
-    .entity-default {
-        background-color: #ced4da;
-        color: #212529;
-    }
-
-    .form-control:focus, .form-select:focus {
-        border-color: #212529;
-        box-shadow: 0 0 0 0.25rem rgba(33, 37, 41, 0.1);
-    }
-</style>
 
 @code {
     private List<AudioTask>? _tasks;
@@ -278,6 +211,7 @@
         _selectedFile = e.File;
         _pipelineNotification = null;
     }
+
 
     private async Task UploadAndStartPipeline()
     {
@@ -341,7 +275,7 @@
         return status switch
         {
             AudioTaskStatus.Completed => "status-completed",
-            AudioTaskStatus.Processing => "status-processing",
+            AudioTaskStatus.Transcribed => "status-transcribed",
             AudioTaskStatus.Pending => "status-pending",
             AudioTaskStatus.Failed => "status-failed",
             _ => "status-default"

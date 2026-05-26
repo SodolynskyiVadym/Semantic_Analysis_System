@@ -81,14 +81,40 @@ namespace ClientApp.Services
 
 
 
-        public async Task<ApiResponse<AudioTask>> UpdateAudioTaskAsync(AudioTaskUpdateRequest request)
+        public async Task<ApiResponse<AudioTask>> UpdateTranscribeAudioTaskAsync(string id, AudioTaskUpdate request)
         {
             try
             {
                 var json = System.Text.Json.JsonSerializer.Serialize(request);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PatchAsync($"{_url}/{request.Id}", content);
+                var response = await _httpClient.PatchAsync($"{_url}/transcription/{id}", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+
+                    var task = await response.Content.ReadFromJsonAsync<AudioTask>(options);
+                    return new ApiResponse<AudioTask> { Data = task, IsSuccess = true };
+                }
+
+                return new ApiResponse<AudioTask> { IsSuccess = false, ErrorMessage = response.ReasonPhrase };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<AudioTask> { IsSuccess = false, ErrorMessage = ex.Message };
+            }
+        }
+
+        public async Task<ApiResponse<AudioTask>> UpdateAnalysisAudioTaskAsync(string id, AudioTaskUpdate request)
+        {
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(request);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PatchAsync($"{_url}/analysis/{id}", content);
 
                 if (response.IsSuccessStatusCode)
                 {

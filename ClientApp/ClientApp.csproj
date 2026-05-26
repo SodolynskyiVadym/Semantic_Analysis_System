@@ -67,14 +67,18 @@
     </ItemGroup>
 
     <ItemGroup>
+      <AndroidResource Remove="wwwroot\audio\**" />
+      <Compile Remove="wwwroot\audio\**" />
+      <Content Remove="wwwroot\audio\**" />
+      <EmbeddedResource Remove="wwwroot\audio\**" />
+      <None Remove="wwwroot\audio\**" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
         <PackageReference Include="QuestPDF" Version="2026.5.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="wwwroot\audio\" />
     </ItemGroup>
 
 </Project>

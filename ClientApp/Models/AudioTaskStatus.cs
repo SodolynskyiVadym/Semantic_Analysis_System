@@ -12,7 +12,7 @@ namespace ClientApp.Models
         Pending,
 
         [JsonPropertyName("TRANSCRIBED")]
-        Processing,
+        Transcribed,
 
         [JsonPropertyName("COMPLETED")]
         Completed,

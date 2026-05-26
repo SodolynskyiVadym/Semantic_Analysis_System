@@ -83,7 +83,7 @@ async def create_audio_task(file: UploadFile = File(...), repo: RepoDep = None, 
         raise HTTPException(status_code=500, detail=f"Помилка бази даних: {e}")
     
     try:
-        await mq.publish({
+        await mq.publish_stt({
             "id": id,
             "file_name": f"{id}_{file.filename}"
         })
@@ -116,13 +116,31 @@ async def get_audio_task(task_id: str, repo: RepoDep = None):
 
 
 @app.patch(
-    "/tasks/{task_id}",
+    "/tasks/analysis/{task_id}",
     response_model=AudioTaskResponse
 )
 async def update_audio_task(task_id: str, payload: AudioTaskUpdate, repo: RepoDep = None):
-    result = await repo.update(task_id, payload)
+    result = await repo.update_analysis(task_id, payload)
     if not result:
         raise HTTPException(status_code=404, detail="Record not found")
+    return result
+
+
+
+@app.patch(
+    "/tasks/transcription/{task_id}",
+    response_model=AudioTaskResponse
+)
+async def update_transcription(task_id: str, payload: AudioTaskUpdate, repo: RepoDep = None, mq: RabbitDep = None):
+    result = await repo.update_transcription(task_id, payload)
+    if not result:
+        raise HTTPException(status_code=404, detail="Record not found")
+    
+    try:
+        await mq.publish_nlp(task_id)
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
     return result
 
 
