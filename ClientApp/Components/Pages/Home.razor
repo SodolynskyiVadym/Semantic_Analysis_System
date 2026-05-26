@@ -155,8 +155,22 @@
                                     </div>
                                 </td>
                                 <td class="text-end px-3">
-                                    <button class="btn btn-sm btn-outline-danger rounded-1" title="Видалити" @onclick:stopPropagation="true" @onclick="() => DeleteTask(task.Id)">
-                                        Видалити
+                                    <button class="btn btn-sm btn-outline-danger rounded-1 d-inline-flex align-items-center justify-content-center"
+                                            style="min-width: 85px;"
+                                            title="Видалити"
+                                            @onclick:stopPropagation="true"
+                                            @onclick="() => DeleteTask(task.Id)"
+                                            disabled="@(_deletingTaskId == task.Id)">
+
+                                        @if (_deletingTaskId == task.Id)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                            <span>...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Видалити</span>
+                                        }
                                     </button>
                                 </td>
                             </tr>
@@ -176,6 +190,7 @@
     private IBrowserFile? _selectedFile;
     private bool _isPipelineStarting = false;
     private string? _pipelineNotification;
+    private string? _deletingTaskId = null;
 
     private string _searchFileName = "";
     private string _searchEntity = "";
@@ -222,17 +237,25 @@
 
         try
         {
-            await Task.Delay(2000);
+            var response = await ApiService.UploadAudioTaskAsync(_selectedFile);
 
-            _pipelineNotification = $"Файл {_selectedFile.Name} успішно завантажено. Конвеєр аналізу запущено.";
+            if (response.IsSuccess)
+            {
+                _pipelineNotification = $"Файл {_selectedFile.Name} успішно завантажено. Конвеєр аналізу запущено.";
 
-            _selectedFile = null;
+                _selectedFile = null;
 
-            await LoadTasks();
+                await LoadTasks();
+            }
+            else
+            {
+                _pipelineNotification = $"❌ Помилка сервера: {response.ErrorMessage}";
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Помилка завантаження файлу: {ex.Message}");
+            _pipelineNotification = $"❌ Помилка: {ex.Message}";
         }
         finally
         {
@@ -266,8 +289,20 @@
 
     private async Task DeleteTask(string taskId)
     {
-        _tasks?.RemoveAll(t => t.Id == taskId);
+        if (_deletingTaskId != null) return;
+
+        _deletingTaskId = taskId;
         StateHasChanged();
+
+        var response = await ApiService.DeleteAudioTaskByID(taskId);
+
+        if (response.IsSuccess)
+        {
+            _tasks?.RemoveAll(t => t.Id == taskId);
+        }
+
+        _deletingTaskId = null; 
+        StateHasChanged(); 
     }
 
     private string GetStatusClass(AudioTaskStatus status)

@@ -91,13 +91,42 @@
                             </button>
 
                             <div class="d-flex gap-2 mt-2">
-                                <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportJson">
-                                    🗃️ Експорт JSON
+                                <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportJson" disabled="@_isLoading">
+                                    🗃️ JSON
                                 </button>
-                                <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportPdf">
-                                    📄 Експорт PDF
+                                <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportPdf" disabled="@_isLoading">
+                                    📄 PDF
                                 </button>
                             </div>
+
+                            @if (_awaitingDeleteConfirmation)
+                            {
+                                <div class="d-flex gap-2 mt-3">
+                                    <button class="btn btn-danger w-100 fw-bold rounded-1 d-flex justify-content-center align-items-center"
+                                            @onclick="ExecuteDelete" disabled="@_isDeleting">
+                                        @if (_isDeleting)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            <span>Видалення...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>⚠️ Точно видалити?</span>
+                                        }
+                                    </button>
+                                    <button class="btn btn-outline-secondary fw-bold rounded-1"
+                                            @onclick="CancelDelete" disabled="@_isDeleting">
+                                        Скасувати
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="btn btn-outline-danger mt-3 fw-bold rounded-1 d-flex justify-content-center align-items-center"
+                                        @onclick="RequestDelete" disabled="@_isLoading">
+                                    <span>🗑️ Видалити перехоплення</span>
+                                </button>
+                            }
                         </div>
 
                     </div>
@@ -154,9 +183,12 @@
 
     private ViewAudioTask? _viewTask;
     private bool _isLoading = true;
+    private bool _isDeleting = false;
     private string? _errorMessage;
     private ElementReference _audioElement;
     private AudioTask? _rawServerData;
+    private bool _awaitingDeleteConfirmation = false;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -181,6 +213,39 @@
         }
 
         _isLoading = false;
+    }
+
+
+    private void RequestDelete()
+    {
+        _awaitingDeleteConfirmation = true;
+    }
+
+    private void CancelDelete()
+    {
+        _awaitingDeleteConfirmation = false;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (_isDeleting) return;
+
+        _isDeleting = true;
+        StateHasChanged();
+
+        var response = await ApiService.DeleteAudioTaskByID(TaskId);
+
+        if (response.IsSuccess)
+        {
+            Nav.NavigateTo("/");
+        }
+        else
+        {
+            _errorMessage = response.ErrorMessage ?? "Помилка при спробі видалити завдання.";
+            _isDeleting = false;
+            _awaitingDeleteConfirmation = false;
+            StateHasChanged();
+        }
     }
 
     private async Task SeekTo(double seconds)
