@@ -51,13 +51,14 @@ async def lifespan(app: FastAPI):
         app.state.mongo_client.close()
 
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 
 @app.get("/", tags=["Health"])
 async def root():
     return {"status": "ok", "message": "Audio Analysis API works"}
-
 
 
 @app.post(
@@ -117,19 +118,19 @@ async def get_audio_task(task_id: str, repo: RepoDep = None):
 
 @app.patch(
     "/tasks/analysis/{task_id}",
-    response_model=AudioTaskResponse
+    status_code=status.HTTP_204_NO_CONTENT
 )
 async def update_audio_task(task_id: str, payload: AudioTaskUpdate, repo: RepoDep = None):
     result = await repo.update_analysis(task_id, payload)
     if not result:
         raise HTTPException(status_code=404, detail="Record not found")
-    return result
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 
 @app.patch(
     "/tasks/transcription/{task_id}",
-    response_model=AudioTaskResponse
+    status_code=status.HTTP_204_NO_CONTENT
 )
 async def update_transcription(task_id: str, payload: AudioTaskUpdate, repo: RepoDep = None, mq: RabbitDep = None):
     result = await repo.update_transcription(task_id, payload)
@@ -141,7 +142,7 @@ async def update_transcription(task_id: str, payload: AudioTaskUpdate, repo: Rep
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-    return result
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.delete(
@@ -159,5 +160,5 @@ async def delete_audio_task(task_id: str, repo: RepoDep = None):
 async def get_audio(filename: str):
     file_path = os.path.join(settings.AUDIO_DIR, filename)
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Файл не знайдено")
+        raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path, media_type="audio/wav")

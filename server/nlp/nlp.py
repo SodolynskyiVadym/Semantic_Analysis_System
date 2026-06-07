@@ -5,7 +5,7 @@ from nlp.nlp_text_normalizer import normalize_ner
 
 print(f"[*] Loading NER model")
 try:
-    ner_pipeline = pipeline("ner", model=settings.NLP_MODEL_PATH, aggregation_strategy="simple")
+    ner_pipeline = pipeline("ner", model=settings.NLP_AI_MODEL_PATH, aggregation_strategy="simple")
     print("[v] NER model loaded successfully.")
 except Exception as e:
     print(f"[!] Error loading NER model: {e}")

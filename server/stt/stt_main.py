@@ -4,13 +4,18 @@ import asyncio
 import aio_pika
 
 from config import settings
-from stt.stt import run_transcription
+from stt.demucs import DemucsProcessor
+from stt.stt import WhisperProcessor
 from stt.database import update as update_db
 from stt.models import AudioTaskUpdate, TaskStatus
 from setup_logger import setup_worker_logger
 
 
 log = setup_worker_logger("stt_worker", settings.STT_LOG_FILE)
+log.info("Initializing AI models...")
+demucs_processor = DemucsProcessor()
+whisper_processor = WhisperProcessor()
+log.info("AI models successfully loaded.")
 
 
 async def process_audio_task(
@@ -24,7 +29,7 @@ async def process_audio_task(
 
         file_path = os.path.join(settings.AUDIO_DIR, file_name)
 
-        log.info("Received task %s. File: %s", task_id, file_path)
+        log.info("Received task %s. Original file: %s", task_id, file_path)
 
         if not os.path.exists(file_path):
             log.error("File '%s' not found for task %s! Skipping...", file_path, task_id)
@@ -32,33 +37,30 @@ async def process_audio_task(
             return
 
         try:
-            log.info("Starting transcription for task %s...", task_id)
+            log.info("Starting Demucs API voice extraction for task %s...", task_id)
             
-            transcript_data = await asyncio.to_thread(run_transcription, file_path)
+            audio_array = await asyncio.to_thread(
+                demucs_processor.process, 
+                file_path
+            )
+            
+            log.info("Demucs extraction completed in memory. Starting Whisper transcription...")
+            
+            transcript_data = await asyncio.to_thread(
+                whisper_processor.process, 
+                audio_array
+            )
             
             payload = AudioTaskUpdate(
                 status=TaskStatus.TRANSCRIBED,
                 transcription=transcript_data
             )
             await update_db(task_id, payload)
-            
-            log.info("Task %s transcribed successfully.", task_id)
-            log.info("Sending task %s to NLP queue...", task_id)
-
-            nlp_message = json.dumps({"id": task_id}).encode("utf-8")
-            
-            await exchange.publish(
-                aio_pika.Message(
-                    body=nlp_message,
-                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT
-                ),
-                routing_key=settings.RABBITMQ_NLP_QUEUE
-            )
 
         except Exception as e:
             log.error("Critical error processing task %s: %s", task_id, str(e), exc_info=True)
             await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))
-            raise  
+            raise 
 
 
 async def main():
@@ -76,7 +78,6 @@ async def main():
     await channel.set_qos(prefetch_count=1)
 
     stt_queue = await channel.declare_queue(settings.RABBITMQ_STT_QUEUE, durable=True)
-    
     await channel.declare_queue(settings.RABBITMQ_NLP_QUEUE, durable=True)
     exchange = channel.default_exchange
 
@@ -94,6 +95,7 @@ async def main():
     finally:
         log.info("Closing RabbitMQ connection...")
         await connection.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

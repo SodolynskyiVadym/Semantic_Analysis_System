@@ -1,12 +1,12 @@
 secret.env
 dataset_bio.txt
 
-nlp/models
+nlp/roberta_model
 nlp/training_data
 nlp/stt_training_data
 nlp/results
 
-stt/model
+stt/whisper_model
 
 /rabbitmq
 /database

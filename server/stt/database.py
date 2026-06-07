@@ -6,8 +6,7 @@ from stt.models import AudioTask, AudioTaskUpdate
 
 client = AsyncIOMotorClient(settings.MONGO_CONNECTION_STRING)
 db = client[settings.MONGO_DB_NAME]
-
-audio_tasks_collection = db["audio_tasks"]
+audio_tasks_collection = db[settings.MONGO_AUDIO_TASK_COLLECTION]
 
 
 def _doc_to_audio_task(doc: dict) -> AudioTask:
@@ -27,14 +26,13 @@ async def get(task_id: str) -> Optional[AudioTask]:
 async def update(task_id: str, payload: AudioTaskUpdate) -> Optional[AudioTask]:
     changes = payload.model_dump(exclude_none=True)
     if not changes:
-        return await get(task_id)
+        return False
     
     if "transcription" in changes and payload.transcription:
         changes["transcription"] = [s.model_dump() for s in payload.transcription]
 
-    result = await audio_tasks_collection.find_one_and_update(
+    result = await audio_tasks_collection.update_one(
         {"_id": task_id},
-        {"$set": changes},
-        return_document=ReturnDocument.AFTER,
+        {"$set": changes}
     )
-    return _doc_to_audio_task(result) if result else None
+    return result.matched_count > 0

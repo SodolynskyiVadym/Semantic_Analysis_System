@@ -42,6 +42,8 @@ def convert_json_to_bio(json_data):
         
     return bio_dataset
 
+
+
 def main():
     if not os.path.exists(TRAINING_DATA_PATH):
         print(f"Error: Directory {TRAINING_DATA_PATH} not found.")
@@ -68,6 +70,8 @@ def main():
             f.write("\n") 
 
     print(f"Done. Successfully converted {len(all_bio_data)} conversations.")
+
+
 
 if __name__ == "__main__":
     main()

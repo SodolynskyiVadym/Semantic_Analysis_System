@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from api.config import settings
 
 from api.models import AudioTaskCreate, AudioTaskUpdate, AudioTaskResponse, TaskStatus
 
@@ -19,7 +20,7 @@ def _doc_to_audio_task_response(doc: dict) -> AudioTaskResponse:
 
 class AudioTaskRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
-        self.collection = db["audio_tasks"]
+        self.collection = db[settings.MONGO_AUDIO_TASK_COLLECTION]
 
     async def create(self, payload: AudioTaskCreate) -> AudioTaskResponse:
             doc = {
@@ -58,38 +59,37 @@ class AudioTaskRepository:
         return _doc_to_audio_task_response(doc) if doc else None
 
 
-    async def update_analysis(
-        self, task_id: str, payload: AudioTaskUpdate
-    ) -> Optional[AudioTaskResponse]:
+    async def update_analysis(self, task_id: str, payload: AudioTaskUpdate) -> bool:
         payload.status = TaskStatus.COMPLETED
         payload.transcription = None
 
+        if payload.analysis:
+            payload.entities = list({segment.entity_group for segment in payload.analysis})
+
         changes = payload.model_dump(exclude_none=True)
         if not changes:
-            return None
+            return False
 
         if "analysis" in changes:
             changes["analysis"] = [s.model_dump() for s in payload.analysis]
 
-        result = await self.collection.find_one_and_update(
+        result = await self.collection.update_one(
             {"_id": task_id},
             {"$set": changes},
             return_document=True,
         )
-        return _doc_to_audio_task_response(result) if result else None
+        return result.matched_count > 0
     
 
-    async def update_transcription(
-        self, task_id: str, payload: AudioTaskUpdate
-    ) -> Optional[AudioTaskResponse]:
+    async def update_transcription(self, task_id: str, payload: AudioTaskUpdate) -> bool:
         payload.status = TaskStatus.TRANSCRIBED
         changes = payload.model_dump(exclude_none=True)
         
-        if not changes:
-            return None
-        
         if "transcription" in changes:
             changes["transcription"] = [s.model_dump() for s in payload.transcription]
+
+        if not changes:
+            return False
 
         changes.pop("analysis", None)
         changes.pop("entities", None)
@@ -102,13 +102,12 @@ class AudioTaskRepository:
             }
         }
 
-        result = await self.collection.find_one_and_update(
+        result = await self.collection.update_one(
             {"_id": task_id},
             update_query,
             return_document=True,
         )
-        
-        return _doc_to_audio_task_response(result) if result else None
+        return result.matched_count > 0
     
 
 

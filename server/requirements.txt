@@ -12,3 +12,5 @@ python-multipart
 torch
 transformers==5.9.0
 uvicorn
+evaluate
+demucs

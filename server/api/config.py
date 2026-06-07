@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     MONGO_CONNECTION_STRING: str = "mongodb://admin:password@localhost:27017/"
     MONGO_DB_NAME: str = "analysis_db"
+    MONGO_AUDIO_TASK_COLLECTION: str = "audio_tasks"
 
     RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
