@@ -1,8 +1,7 @@
 from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import ReturnDocument
 from config import settings
-from nlp.models import AudioTask, AudioTaskUpdate
+from nlp.models import AudioTask, AudioTaskUpdate, TaskStatus
 
 client = AsyncIOMotorClient(settings.MONGO_CONNECTION_STRING)
 db = client[settings.MONGO_DB_NAME]
@@ -32,7 +31,7 @@ async def update(task_id: str, payload: AudioTaskUpdate) -> bool:
         changes["analysis"] = [s.model_dump() for s in payload.analysis]
 
     result = await audio_tasks_collection.update_one(
-        {"_id": task_id},
+        {"_id": task_id, "status": TaskStatus.TRANSCRIBED},
         {"$set": changes}
     )
     return result.matched_count > 0

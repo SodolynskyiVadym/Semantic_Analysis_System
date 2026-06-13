@@ -57,6 +57,19 @@ async def process_audio_task(
             )
             await update_db(task_id, payload)
 
+            log.info("Task %s transcribed successfully.", task_id)
+            log.info("Sending task %s to NLP queue...", task_id)
+
+            nlp_message = json.dumps({"id": task_id}).encode("utf-8")
+            
+            await exchange.publish(
+                aio_pika.Message(
+                    body=nlp_message,
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+                ),
+                routing_key=settings.RABBITMQ_NLP_QUEUE
+            )
+
         except Exception as e:
             log.error("Critical error processing task %s: %s", task_id, str(e), exc_info=True)
             await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))

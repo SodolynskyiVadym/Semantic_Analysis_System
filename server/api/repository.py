@@ -59,7 +59,7 @@ class AudioTaskRepository:
         return _doc_to_audio_task_response(doc) if doc else None
 
 
-    async def update_analysis(self, task_id: str, payload: AudioTaskUpdate) -> bool:
+    async def update_analysis(self, task_id: str, payload: AudioTaskUpdate) -> Optional[AudioTaskResponse]:
         payload.status = TaskStatus.COMPLETED
         payload.transcription = None
 
@@ -73,15 +73,15 @@ class AudioTaskRepository:
         if "analysis" in changes:
             changes["analysis"] = [s.model_dump() for s in payload.analysis]
 
-        result = await self.collection.update_one(
+        result = await self.collection.find_one_and_update(
             {"_id": task_id},
             {"$set": changes},
             return_document=True,
         )
-        return result.matched_count > 0
+        return result
     
 
-    async def update_transcription(self, task_id: str, payload: AudioTaskUpdate) -> bool:
+    async def update_transcription(self, task_id: str, payload: AudioTaskUpdate) -> Optional[AudioTaskResponse]:
         payload.status = TaskStatus.TRANSCRIBED
         changes = payload.model_dump(exclude_none=True)
         
@@ -102,12 +102,12 @@ class AudioTaskRepository:
             }
         }
 
-        result = await self.collection.update_one(
+        result = await self.collection.find_one_and_update(
             {"_id": task_id},
             update_query,
             return_document=True,
         )
-        return result.matched_count > 0
+        return result
     
 
 

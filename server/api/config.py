@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     PROJECT_ROOT: str = os.path.dirname(CURRENT_DIR)
     AUDIO_DIR: str = os.path.join(PROJECT_ROOT, "uploads")
 
+    MAX_FILE_SIZE_MB: int = 25 
+    MAX_FILE_SIZE_BYTES: int = MAX_FILE_SIZE_MB * 1024 * 1024
+    ALLOWED_EXTENSIONS: set[str] = {".mp3", ".mp4", ".wav", ".ogg", ".flac", ".m4a"}
 
     MONGO_CONNECTION_STRING: str = "mongodb://admin:password@localhost:27017/"
     MONGO_DB_NAME: str = "analysis_db"

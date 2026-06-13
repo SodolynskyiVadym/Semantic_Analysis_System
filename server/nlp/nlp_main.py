@@ -1,15 +1,24 @@
 import json
 import asyncio
+import sys
 import aio_pika
 
 from config import settings
 from nlp.database import update as update_db, get as get_db
 from nlp.models import AudioTaskUpdate, TaskStatus
-from nlp.nlp import run_ner
+from nlp.nlp import NLPProcessor 
 from setup_logger import setup_worker_logger
 
 
 log = setup_worker_logger("nlp_worker", settings.NLP_LOG_FILE)
+
+try:
+    log.info("Loading NER model...")
+    ner_processor = NLPProcessor()
+    log.info("NER model loaded successfully.")
+except Exception as e:
+    log.critical("Failed to load NER model: %s", str(e), exc_info=True)
+    sys.exit(1)
 
 
 async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
@@ -26,7 +35,14 @@ async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
 
         try:
             log.info("Starting XLM-RoBERTa NER analysis for task %s...", task_id)
-            analysis, entities = await asyncio.to_thread(run_ner, document.transcription)
+            
+            analysis, entities = await asyncio.to_thread(
+                ner_processor.process, 
+                document.transcription
+            )
+
+            if not analysis:
+                log.warning("NER analysis returned empty results for task %s.", task_id)
 
             payload = AudioTaskUpdate(
                 status=TaskStatus.COMPLETED, 
@@ -38,7 +54,7 @@ async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
             log.info("Task %s completed successfully. Entities saved to DB.", task_id)
             
         except Exception as e:
-            log.error("Critical error updating document for task %s: %s", task_id, str(e), exc_info=True)
+            log.error("Critical error during NER processing or DB update for task %s: %s", task_id, str(e), exc_info=True)
             await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))
             raise 
 

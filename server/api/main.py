@@ -67,6 +67,21 @@ async def root():
     status_code=status.HTTP_201_CREATED
 )
 async def create_audio_task(file: UploadFile = File(...), repo: RepoDep = None, mq: RabbitDep = None):
+    file_ext = os.path.splitext(file.filename.lower())[1]
+    if file_ext not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file format '{file_ext}'. Allowed formats: {', '.join(settings.ALLOWED_EXTENSIONS)}"
+        )
+
+
+    if file_size := file.size:
+        if file_size > settings.MAX_FILE_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File is too large ({file_size / (1024*1024):.2f} MB). Maximum file size: {settings.MAX_FILE_SIZE_MB} MB."
+            )
+            
     id = str(uuid.uuid4())
     file_location = os.path.join(settings.AUDIO_DIR, f"{id}_{file.filename}")
 
@@ -81,7 +96,7 @@ async def create_audio_task(file: UploadFile = File(...), repo: RepoDep = None, 
     except Exception as e:
         if os.path.exists(file_location):
             os.remove(file_location)
-        raise HTTPException(status_code=500, detail=f"Помилка бази даних: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not create record: {e}")
     
     try:
         await mq.publish_stt({
