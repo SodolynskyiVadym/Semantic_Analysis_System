@@ -1,5 +1,4 @@
 ﻿@page "/"
-@using System.Net.Http.Json
 @using ClientApp.Models
 @inject ApiService ApiService
 @inject NavigationManager NavigationManager
@@ -32,7 +31,7 @@
             </h6>
             <div class="row g-2">
                 <div class="col-md-9">
-                    <InputFile class="form-control rounded-1" OnChange="OnFileSelected" accept="audio/*" />
+                    <InputFile class="form-control rounded-1" OnChange="OnFileSelected" accept="audio/*, .mp4, video/mp4" />
                 </div>
                 <div class="col-md-3">
                     <button class="btn btn-success w-100 rounded-1 fw-bold text-white text-uppercase"
@@ -77,6 +76,7 @@
                 <option value="EQUIPMENT-ENEMY">🔴 EQUIPMENT-ENEMY</option>
                 <option value="EQUIPMENT-FRIENDLY">🔵 EQUIPMENT-FRIENDLY</option>
                 <option value="QUANTITY">🔢 QUANTITY</option>
+                <option value="CALLSIGN">📞 CALLSIGN</option>
             </select>
         </div>
     </div>
@@ -213,7 +213,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Помилка завантаження: {ex.Message}");
+            _tasks = new List<AudioTask>();
         }
         finally
         {
@@ -249,12 +249,11 @@
             }
             else
             {
-                _pipelineNotification = $"❌ Помилка сервера: {response.ErrorMessage}";
+                _pipelineNotification = $"❌ Помилка при завантаженні файлу";
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Помилка завантаження файлу: {ex.Message}");
             _pipelineNotification = $"❌ Помилка: {ex.Message}";
         }
         finally
@@ -327,6 +326,7 @@
             "EQUIPMENT-FRIENDLY" => "entity-friendly",
             "LOCATION" => "entity-location",
             "QUANTITY" => "entity-quantity",
+            "CALLSIGN" => "entity-callsign",
             _ => "entity-default"
         };
     }

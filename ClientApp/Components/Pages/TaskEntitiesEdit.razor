@@ -13,7 +13,7 @@
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-dark px-4 fw-bold rounded-1" @onclick='() => Nav.NavigateTo($"/player/{TaskId}")'>
-                Скасувати
+                Назад
             </button>
             <button class="btn btn-dark px-4 fw-bold rounded-1 d-flex align-items-center" @onclick="SaveEntities" disabled="@_isSaving">
                 @if (_isSaving)
@@ -77,6 +77,10 @@
                             <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn QUANTITY @(_selectedEntity == "QUANTITY" ? "active-tool" : "inactive-tool")"
                                     @onclick='() => _selectedEntity = "QUANTITY"'>
                                 QUANTITY
+                            </button>
+                            <button class="btn btn-sm fw-bold text-start rounded-1 palette-btn CALLSIGN @(_selectedEntity == "CALLSIGN" ? "active-tool" : "inactive-tool")"
+                                    @onclick='() => _selectedEntity = "CALLSIGN"'>
+                                CALLSIGN
                             </button>
                         </div>
                     </div>

@@ -18,6 +18,7 @@ class EntityType(str, Enum):
     PERSONNEL_ENEMY = "PERSONNEL-ENEMY"
     EQUIPMENT_FRIENDLY = "EQUIPMENT-FRIENDLY"
     EQUIPMENT_ENEMY = "EQUIPMENT-ENEMY"
+    CALLSIGN = "CALLSIGN"
 
 
 class TranscribeSegment(BaseModel):

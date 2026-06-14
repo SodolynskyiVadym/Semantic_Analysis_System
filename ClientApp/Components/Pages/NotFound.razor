@@ -1,5 +1,46 @@
-﻿@page "/not-found"
-@layout MainLayout
+﻿@page "/404"
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<div class="container-fluid px-4 mt-4 pb-5">
+    <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bolder mb-1 text-dark">Сторінку не знайдено</h2>
+            <div class="text-secondary" style="font-size: 1.1rem;">
+                Система обробки та семантичного аналізу радіоефіру
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/" class="btn btn-outline-dark px-4 fw-bold rounded-1 text-decoration-none">
+                🔙 На головну
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8">
+            <div class="card rounded-1 border shadow-sm">
+                <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+                    <h6 class="fw-bold mb-0 text-dark text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                        Помилка навігації
+                    </h6>
+                    <span class="badge bg-secondary rounded-1" style="font-size: 0.85rem;">Код: 404</span>
+                </div>
+
+                <div class="card-body p-5 text-center">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">📡</div>
+                    <h4 class="fw-bold text-dark mb-3">Сигнал втрачено!</h4>
+
+                    <p class="text-secondary mb-4 mx-auto" style="font-size: 1.1rem; max-width: 600px;">
+                        Сторінка, яку ви шукаєте, не існує, була видалена або її адреса змінилася.
+                        Перевірте правильність введеного URL-посилання.
+                    </p>
+
+                    <div class="mt-3">
+                        <a href="/" class="btn btn-dark px-5 py-2 fw-bold rounded-1 text-decoration-none d-inline-flex align-items-center justify-content-center">
+                            <span class="me-2">🏠</span> Повернутися до реєстру
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

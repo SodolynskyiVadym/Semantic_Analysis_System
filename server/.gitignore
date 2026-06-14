@@ -7,6 +7,7 @@ nlp/stt_training_data
 nlp/results
 
 stt/whisper_model
+stt/censor_video.py
 
 /rabbitmq
 /database

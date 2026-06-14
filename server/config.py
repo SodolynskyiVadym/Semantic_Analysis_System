@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
     LOG_DIR: str = os.path.join(CURRENT_DIR, "logs")
     AUDIO_DIR: str = os.path.join(CURRENT_DIR, "uploads")
+    TEST_DIR: str = os.path.join(CURRENT_DIR, "audio")
 
 
     MONGO_CONNECTION_STRING: str = "mongodb://admin:password@localhost:27017/"
@@ -24,7 +25,7 @@ class Settings(BaseSettings):
     # NLP CONFIG
     NLP_DIR: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nlp")
 
-    NLP_AI_MODEL_PATH: str = os.path.join(NLP_DIR, "roberta_model", "military_ner_model_v9")
+    NLP_AI_MODEL_PATH: str = os.path.join(NLP_DIR, "roberta_model", "military_ner_model_v10")
     BIO_FILE_PATH: str = os.path.join(NLP_DIR, "dataset_bio.txt")
     TRAINING_DATA_PATH: str = os.path.join(NLP_DIR, "training_data")
     NLP_LOG_FILE: str = os.path.join(LOG_DIR, "nlp.log")

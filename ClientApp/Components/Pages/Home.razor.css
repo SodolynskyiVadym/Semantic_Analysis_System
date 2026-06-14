@@ -54,6 +54,11 @@
     color: white;
 }
 
+.entity-callsign {
+    background-color: #6f42c1;
+    color: white;
+}
+
 .entity-default {
     background-color: #ced4da;
     color: #212529;

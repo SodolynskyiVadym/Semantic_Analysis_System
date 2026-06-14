@@ -73,8 +73,10 @@
                             <span class="badge rounded-1 ner-tag LOCATION">LOCATION</span>
                             <span class="badge rounded-1 ner-tag PERSONNEL-ENEMY">PERSONNEL-ENEMY</span>
                             <span class="badge rounded-1 ner-tag PERSONNEL-FRIENDLY">PERSONNEL-FRIENDLY</span>
+                            <span class="badge rounded-1 ner-tag EQUIPMENT-ENEMY">EQUIPMENT-ENEMY</span>
                             <span class="badge rounded-1 ner-tag EQUIPMENT-FRIENDLY">EQUIPMENT-FRIENDLY</span>
                             <span class="badge rounded-1 ner-tag QUANTITY">QUANTITY</span>
+                            <span class="badge rounded-1 ner-tag CALLSIGN">CALLSIGN</span>
                         </div>
 
                         <hr class="mb-4" />
@@ -83,21 +85,30 @@
                             Управління даними
                         </h6>
                         <div class="d-grid gap-2">
-                            <button class="btn btn-outline-dark fw-bold rounded-1 text-start" @onclick='() => Nav.NavigateTo($"/player/{TaskId}/edit/transcript")' disabled="@_isLoading">
-                                📝 Виправити текст (STT)
-                            </button>
-                            <button class="btn btn-dark fw-bold rounded-1 text-start" @onclick='() => Nav.NavigateTo($"/player/{TaskId}/edit/entities")' disabled="@_isLoading">
-                                🏷️ Розмітити сутності (NER)
-                            </button>
+                            @if (!_viewTask.Status.Equals(AudioTaskStatus.Pending))
+                            {
+                                <button class="btn btn-outline-dark fw-bold rounded-1 text-start" @onclick='() => Nav.NavigateTo($"/player/{TaskId}/edit/transcript")' disabled="@_isLoading">
+                                    📝 Виправити текст (STT)
+                                </button>
+                            }
+                            @if (!_viewTask.Status.Equals(AudioTaskStatus.Pending))
+                            {
+                                <button class="btn btn-dark fw-bold rounded-1 text-start" @onclick='() => Nav.NavigateTo($"/player/{TaskId}/edit/entities")' disabled="@_isLoading">
+                                    🏷️ Розмітити сутності (NER)
+                                </button>
+                            }
 
-                            <div class="d-flex gap-2 mt-2">
-                                <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportJson" disabled="@_isLoading">
-                                    🗃️ JSON
-                                </button>
-                                <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportPdf" disabled="@_isLoading">
-                                    📄 PDF
-                                </button>
-                            </div>
+                            @if (!_viewTask.Status.Equals(AudioTaskStatus.Pending))
+                            {
+                                <div class="d-flex gap-2 mt-2">
+                                    <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportJson" disabled="@_isLoading">
+                                        🗃️ JSON
+                                    </button>
+                                    <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportPdf" disabled="@_isLoading">
+                                        📄 PDF
+                                    </button>
+                                </div>
+                            }
 
                             @if (_awaitingDeleteConfirmation)
                             {

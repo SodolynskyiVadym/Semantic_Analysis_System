@@ -1,0 +1,97 @@
+﻿@page "/error"
+@page "/error/{ErrorCode}"
+@inject NavigationManager Nav
+
+<div class="container-fluid px-4 mt-4 pb-5">
+    <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bolder mb-1 text-dark">@_displayTitle</h2>
+            <div class="text-secondary" style="font-size: 1.1rem;">
+                Система обробки та семантичного аналізу радіоефіру
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/" class="btn btn-outline-dark px-4 fw-bold rounded-1 text-decoration-none">
+                🔙 На головну
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8">
+            <div class="card rounded-1 border shadow-sm">
+                <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+                    <h6 class="fw-bold mb-0 text-dark text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                        Деталі проблеми
+                    </h6>
+                    <span class="badge bg-danger rounded-1" style="font-size: 0.85rem;">Код: @ErrorCode</span>
+                </div>
+
+                <div class="card-body p-5 text-center">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">@_errorIcon</div>
+                    <h4 class="fw-bold text-dark mb-3">Ой, щось пішло не так!</h4>
+
+                    <p class="text-secondary mb-4 mx-auto" style="font-size: 1.1rem; max-width: 600px;">
+                        @_displayMessage
+                    </p>
+
+                    @if (!string.IsNullOrEmpty(CustomErrorMessage))
+                    {
+                        <div class="alert alert-light border rounded-1 fw-semibold d-inline-block text-start mb-4 text-danger">
+                            <strong>Деталі:</strong> @CustomErrorMessage
+                        </div>
+                    }
+
+                    <div class="mt-3">
+                        <a href="/" class="btn btn-dark px-5 py-2 fw-bold rounded-1 text-decoration-none d-inline-flex align-items-center justify-content-center">
+                            <span class="me-2">🏠</span> Повернутися до реєстру
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string ErrorCode { get; set; } = "404";
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? CustomErrorMessage { get; set; }
+
+    private string _displayTitle = "Системна помилка";
+    private string _displayMessage = "";
+    private string _errorIcon = "⚠️";
+
+    protected override void OnParametersSet()
+    {
+        switch (ErrorCode)
+        {
+            case "400":
+                _displayTitle = "Помилка запиту (400)";
+                _displayMessage = "Виникла проблема. Запит сформовано неправильно, або передані дані є некоректними для обробки системою.";
+                _errorIcon = "🛑";
+                break;
+
+            case "404":
+                _displayTitle = "Ресурс не знайдено (404)";
+                _displayMessage = "Запитувану сторінку або файл транскрипту не знайдено. Можливо, перехоплення було видалено або адреса вказана з помилкою.";
+                _errorIcon = "🔍";
+                break;
+
+            case "500":
+                _displayTitle = "Внутрішня помилка (500)";
+                _displayMessage = "Виникла проблема із сервером. Сервер семантичного аналізу ШІ тимчасово недоступний або сталася непередбачувана помилка під час обробки.";
+                _errorIcon = "🔥";
+                break;
+
+            default:
+                _displayTitle = $"Невідома помилка";
+                _displayMessage = "Виникла непередбачувана проблема під час виконання вашого запиту.";
+                _errorIcon = "⚠️";
+                break;
+        }
+    }
+}
