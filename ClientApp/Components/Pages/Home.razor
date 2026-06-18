@@ -59,14 +59,15 @@
     </div>
 
     <div class="row mb-3 g-3">
-        <div class="col-md-8">
+        <div class="col-md-4">
             <div class="input-group">
                 <span class="input-group-text bg-white rounded-1 border-end-0">🔍</span>
                 <input type="text" class="form-control rounded-1 border-start-0 ps-0"
-                       placeholder="Пошук за назвою файлу..."
+                       placeholder="Пошук за назвою..."
                        @bind="_searchFileName" @bind:event="oninput" />
             </div>
         </div>
+
         <div class="col-md-4">
             <select class="form-select rounded-1" @bind="_searchEntity">
                 <option value="">Всі сутності (Без фільтру)</option>
@@ -77,6 +78,16 @@
                 <option value="EQUIPMENT-FRIENDLY">🔵 EQUIPMENT-FRIENDLY</option>
                 <option value="QUANTITY">🔢 QUANTITY</option>
                 <option value="CALLSIGN">📞 CALLSIGN</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <select class="form-select rounded-1" @bind="_searchStatus">
+                <option value="">Всі статуси (Без фільтру)</option>
+                <option value="Pending">⏳ Pending (В черзі)</option>
+                <option value="Transcribed">📝 Transcribed (Розпізнано)</option>
+                <option value="Completed">✅ Completed (Завершено)</option>
+                <option value="Failed">❌ Failed (Помилка)</option>
             </select>
         </div>
     </div>
@@ -141,12 +152,6 @@
                                                     @entity
                                                 </span>
                                             }
-                                            @if (task.Entities.Count > 4)
-                                            {
-                                                <span class="badge rounded-1 border text-secondary bg-light">
-                                                    +@(task.Entities.Count - 4)
-                                                </span>
-                                            }
                                         }
                                         else
                                         {
@@ -194,6 +199,7 @@
 
     private string _searchFileName = "";
     private string _searchEntity = "";
+    private string _searchStatus = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -270,12 +276,19 @@
 
         if (!string.IsNullOrWhiteSpace(_searchFileName))
         {
-            filtered = filtered.Where(t => t.FileName != null && t.FileName.Contains(_searchFileName, StringComparison.OrdinalIgnoreCase));
+            filtered = filtered.Where(t => t.FileName != null &&
+                                           t.FileName.Contains(_searchFileName, StringComparison.OrdinalIgnoreCase));
         }
 
         if (!string.IsNullOrWhiteSpace(_searchEntity))
         {
-            filtered = filtered.Where(t => t.Entities != null && t.Entities.Contains(_searchEntity));
+            filtered = filtered.Where(t => t.Entities != null &&
+                                           t.Entities.Contains(_searchEntity));
+        }
+
+        if (!string.IsNullOrWhiteSpace(_searchStatus))
+        {
+            filtered = filtered.Where(t => t.Status.ToString().Contains(_searchStatus, StringComparison.OrdinalIgnoreCase));
         }
 
         return filtered;

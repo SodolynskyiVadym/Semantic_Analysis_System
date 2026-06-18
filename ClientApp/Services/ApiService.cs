@@ -136,6 +136,28 @@ namespace ClientApp.Services
         }
 
 
+        public async Task<ApiResponse<Boolean>> Init_Repeat_Analysis(string id)
+        {
+            try
+            {
+                var response = await _httpClient.PatchAsync($"{_url}/status/{id}", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    return new ApiResponse<Boolean> { IsSuccess = true, StatusCode = (int)response.StatusCode };
+                }
+                else
+                {
+                    return new ApiResponse<Boolean> { IsSuccess = false, StatusCode = (int)response.StatusCode, ErrorMessage = response.ReasonPhrase };
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<Boolean> { IsSuccess = false, ErrorMessage = ex.Message };
+            }
+        }
+
+
         public async Task<ApiResponse<Boolean>> DeleteAudioTaskByID(string id)
         {
             try

@@ -2,11 +2,10 @@ import json
 import os
 import asyncio
 import aio_pika
-
 from config import settings
 from stt.demucs import DemucsProcessor
 from stt.stt import WhisperProcessor
-from stt.database import update as update_db
+from stt.database import update as update_db, update_status
 from stt.models import AudioTaskUpdate, TaskStatus
 from setup_logger import setup_worker_logger
 
@@ -33,7 +32,7 @@ async def process_audio_task(
 
         if not os.path.exists(file_path):
             log.error("File '%s' not found for task %s! Skipping...", file_path, task_id)
-            await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))
+            await update_status(task_id, TaskStatus.FAILED)
             return
 
         try:
@@ -72,7 +71,7 @@ async def process_audio_task(
 
         except Exception as e:
             log.error("Critical error processing task %s: %s", task_id, str(e), exc_info=True)
-            await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))
+            await update_status(task_id, TaskStatus.FAILED)
             raise 
 
 

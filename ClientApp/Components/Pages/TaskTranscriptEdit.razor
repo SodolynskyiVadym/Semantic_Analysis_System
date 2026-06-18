@@ -46,11 +46,6 @@
             </div>
 
             <div class="card-body p-4 transcript-area">
-                <div class="alert alert-warning rounded-1 border-0 border-start border-4 border-warning mb-4 px-4 py-3 shadow-sm bg-opacity-10" style="background-color: #fff3cd;">
-                    <span class="fw-bold text-dark">⚠️ Увага:</span>
-                    <span class="text-dark">Зміна тексту може змістити індекси символів. Обов'язково перевірте розмітку сутностей (NER) після збереження тексту. Клікніть на таймкод, щоб прослухати фрагмент.</span>
-                </div>
-
                 <audio @ref="_audioElement" controls class="w-100 mb-4 rounded-1 sticky-top" style="top: 10px; z-index: 100;">
                     <source src="http://localhost:8000/audio/@_rawServerData.FileName?v=@Guid.NewGuid()" type="audio/wav">
                 </audio>

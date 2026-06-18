@@ -85,21 +85,16 @@
                             Управління даними
                         </h6>
                         <div class="d-grid gap-2">
-                            @if (!_viewTask.Status.Equals(AudioTaskStatus.Pending))
+                            @if (!_viewTask.Status.Equals(AudioTaskStatus.Pending) && !_viewTask.Status.Equals(AudioTaskStatus.Failed))
                             {
                                 <button class="btn btn-outline-dark fw-bold rounded-1 text-start" @onclick='() => Nav.NavigateTo($"/player/{TaskId}/edit/transcript")' disabled="@_isLoading">
                                     📝 Виправити текст (STT)
                                 </button>
-                            }
-                            @if (!_viewTask.Status.Equals(AudioTaskStatus.Pending))
-                            {
+
                                 <button class="btn btn-dark fw-bold rounded-1 text-start" @onclick='() => Nav.NavigateTo($"/player/{TaskId}/edit/entities")' disabled="@_isLoading">
                                     🏷️ Розмітити сутності (NER)
                                 </button>
-                            }
 
-                            @if (!_viewTask.Status.Equals(AudioTaskStatus.Pending))
-                            {
                                 <div class="d-flex gap-2 mt-2">
                                     <button class="btn btn-outline-secondary rounded-1 w-100 fw-semibold" @onclick="ExportJson" disabled="@_isLoading">
                                         🗃️ JSON
@@ -108,6 +103,13 @@
                                         📄 PDF
                                     </button>
                                 </div>
+                            }
+
+                            @if(_viewTask.Status.Equals(AudioTaskStatus.Failed))
+                            {
+                                <button class="btn btn-outline-primary fw-bold rounded-1 text-start" @onclick="RestartAnalysis" disabled="@_isLoading">
+                                    🔄 Повторний аналіз
+                                </button>
                             }
 
                             @if (_awaitingDeleteConfirmation)
@@ -139,7 +141,6 @@
                                 </button>
                             }
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -220,7 +221,7 @@
         }
         else
         {
-            _errorMessage = response.ErrorMessage ?? "Не вдалося завантажити дані завдання.";
+            Nav.NavigateTo($"/error/500");
         }
 
         _isLoading = false;
@@ -256,6 +257,31 @@
             _isDeleting = false;
             _awaitingDeleteConfirmation = false;
             StateHasChanged();
+        }
+    }
+
+
+    private async Task RestartAnalysis()
+    {
+        var response = await ApiService.Init_Repeat_Analysis(TaskId);
+        if (response.IsSuccess)
+        {
+            _viewTask = new ViewAudioTask
+            {
+                Id = _viewTask.Id,
+                FileName = _viewTask.FileName,
+                CreatedAt = _viewTask.CreatedAt,
+                Status = AudioTaskStatus.Pending,
+                Transcription = new List<ViewTranscribeSegment>{},
+                Analysis = new List<AnalysisSegment> { },
+                Entities = new List<string> { }
+            };
+        }
+        else
+        {
+            if (response.StatusCode >= 500)
+                Nav.NavigateTo($"/error/{500}");
+            else Nav.NavigateTo($"/error/{400}");
         }
     }
 

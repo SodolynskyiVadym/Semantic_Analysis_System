@@ -7,13 +7,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, status
 from fastapi.responses import FileResponse, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient
-
 from api.config import settings
 from api.dependencies import RabbitDep, RepoDep
 from api.models import AudioTaskCreate, AudioTaskUpdate, AudioTaskResponse, TaskStatus
 from api.rabbit import rabbit_client
-
-
 import os
 import logging
 from contextlib import asynccontextmanager
@@ -21,8 +18,8 @@ from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 
 
-
 logger = logging.getLogger("uvicorn.error")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -92,7 +89,7 @@ async def create_audio_task(file: UploadFile = File(...), repo: RepoDep = None, 
         raise HTTPException(status_code=500, detail=f"Could not save file: {e}")
     
     try:
-        response = await repo.create(AudioTaskCreate(id=id, file_name=file.filename))
+        response = await repo.create(AudioTaskCreate(id=id, file_name=f"{id}_{file.filename}"))
     except Exception as e:
         if os.path.exists(file_location):
             os.remove(file_location)
@@ -104,9 +101,7 @@ async def create_audio_task(file: UploadFile = File(...), repo: RepoDep = None, 
             "file_name": f"{id}_{file.filename}"
         })
     except RuntimeError as e:
-        if os.path.exists(file_location):
-            os.remove(file_location)
-        await repo.collection.delete_one({"_id": id})
+        await repo.update_status(id, TaskStatus.FAILED)
         raise HTTPException(status_code=500, detail=str(e))
     
     return response
@@ -155,8 +150,37 @@ async def update_transcription(task_id: str, payload: AudioTaskUpdate, repo: Rep
     try:
         await mq.publish_nlp(task_id)
     except RuntimeError as e:
+        await repo.update_status(task_id, TaskStatus.FAILED)
         raise HTTPException(status_code=500, detail=str(e))
     
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.patch(
+    "/tasks/status/{task_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def init_repeat_analysis(task_id: str, repo: RepoDep = None, mq: RabbitDep = None):
+    audio_task = await repo.get(task_id)
+    if not audio_task:
+        raise HTTPException(status_code=404, detail="Record not found")
+    
+    file_path = os.path.join(settings.AUDIO_DIR, audio_task.file_name)
+    if not os.path.exists(file_path):
+        await repo.update_status(task_id, TaskStatus.FAILED)
+        raise HTTPException(status_code=404, detail="File not found")
+
+    await repo.update_status(task_id, TaskStatus.PENDING)
+
+    try:
+        await mq.publish_stt({
+            "id": task_id,
+            "file_name": audio_task.file_name
+        })
+    except RuntimeError as e:
+        await repo.update_status(task_id, TaskStatus.FAILED)
+        raise HTTPException(status_code=500, detail=str(e))
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -168,6 +192,8 @@ async def delete_audio_task(task_id: str, repo: RepoDep = None):
     deleted = await repo.delete(task_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Record not found")
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 

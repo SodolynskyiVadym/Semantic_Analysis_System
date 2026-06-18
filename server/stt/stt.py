@@ -32,6 +32,6 @@ class WhisperProcessor:
                 text=text,
                 confidence=confidence
             ))
-            print(f"[*] Text: {text} | Confidence: {confidence}")
+            print(f"[*] Text: {text}")
             
         return segments_list

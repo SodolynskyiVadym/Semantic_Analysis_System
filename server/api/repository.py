@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import ReturnDocument
 from api.config import settings
 
 from api.models import AudioTaskCreate, AudioTaskUpdate, AudioTaskResponse, TaskStatus
@@ -25,7 +26,7 @@ class AudioTaskRepository:
     async def create(self, payload: AudioTaskCreate) -> AudioTaskResponse:
             doc = {
                 "_id": payload.id,
-                "file_name": f"{payload.id}_{payload.file_name}",
+                "file_name": payload.file_name,
                 "status": TaskStatus.PENDING, 
                 "created_at": datetime.now(timezone.utc),
             }
@@ -76,7 +77,7 @@ class AudioTaskRepository:
         result = await self.collection.find_one_and_update(
             {"_id": task_id},
             {"$set": changes},
-            return_document=True,
+            return_document=ReturnDocument.AFTER
         )
         return result
     
@@ -95,9 +96,29 @@ class AudioTaskRepository:
         changes.pop("entities", None)
 
         update_query = {
-            "$set": changes,
+            "$set": changes
+            # "$unset": {
+            #     "analysis": "",
+            #     "entities": ""
+            # }
+        }
+
+        result = await self.collection.find_one_and_update(
+            {"_id": task_id},
+            update_query,
+            return_document=ReturnDocument.AFTER
+        )
+        return result
+    
+
+    async def update_status(self, task_id: str, status: TaskStatus) -> Optional[AudioTaskResponse]:
+        update_query = {
+            "$set": {
+                "status": status
+            },
             "$unset": {
                 "analysis": "",
+                "transcription": "",
                 "entities": ""
             }
         }
@@ -105,7 +126,7 @@ class AudioTaskRepository:
         result = await self.collection.find_one_and_update(
             {"_id": task_id},
             update_query,
-            return_document=True,
+            return_document=ReturnDocument.AFTER
         )
         return result
     

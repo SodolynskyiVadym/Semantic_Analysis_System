@@ -4,7 +4,7 @@ import sys
 import aio_pika
 
 from config import settings
-from nlp.database import update as update_db, get as get_db
+from nlp.database import update as update_db, get as get_db, update_status
 from nlp.models import AudioTaskUpdate, TaskStatus
 from nlp.nlp import NLPProcessor 
 from setup_logger import setup_worker_logger
@@ -55,7 +55,7 @@ async def process_audio_task(message: aio_pika.abc.AbstractIncomingMessage):
             
         except Exception as e:
             log.error("Critical error during NER processing or DB update for task %s: %s", task_id, str(e), exc_info=True)
-            await update_db(task_id, AudioTaskUpdate(status=TaskStatus.FAILED))
+            await update_status(task_id, TaskStatus.FAILED)
             raise 
 
 

@@ -1,5 +1,6 @@
 from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import ReturnDocument
 from config import settings
 from nlp.models import AudioTask, AudioTaskUpdate, TaskStatus
 
@@ -22,6 +23,7 @@ async def get(task_id: str) -> Optional[AudioTask]:
     return _doc_to_audio_task(doc) if doc else None
 
 
+
 async def update(task_id: str, payload: AudioTaskUpdate) -> bool:
     changes = payload.model_dump(exclude_none=True)
     if not changes:
@@ -35,3 +37,24 @@ async def update(task_id: str, payload: AudioTaskUpdate) -> bool:
         {"$set": changes}
     )
     return result.matched_count > 0
+
+
+
+async def update_status(task_id: str, status: TaskStatus) -> Optional[AudioTask]:
+        update_query = {
+            "$set": {
+                "status": status
+            },
+            "$unset": {
+                "analysis": "",
+                "transcription": "",
+                "entities": ""
+            }
+        }
+
+        result = await audio_tasks_collection.find_one_and_update(
+            {"_id": task_id},
+            update_query,
+            return_document=ReturnDocument.AFTER
+        )
+        return result

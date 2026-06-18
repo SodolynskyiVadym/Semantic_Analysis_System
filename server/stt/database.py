@@ -36,3 +36,24 @@ async def update(task_id: str, payload: AudioTaskUpdate) -> Optional[AudioTask]:
         {"$set": changes}
     )
     return result.matched_count > 0
+
+
+
+async def update_status(task_id: str, status: TaskStatus) -> Optional[AudioTask]:
+        update_query = {
+            "$set": {
+                "status": status
+            },
+            "$unset": {
+                "analysis": "",
+                "transcription": "",
+                "entities": ""
+            }
+        }
+
+        result = await audio_tasks_collection.find_one_and_update(
+            {"_id": task_id},
+            update_query,
+            return_document=ReturnDocument.AFTER
+        )
+        return result

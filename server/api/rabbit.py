@@ -53,7 +53,7 @@ class RabbitClient:
             routing_key=settings.RABBITMQ_STT_QUEUE,
         )
     
-    async def publish_nlp(self, task_id:str) -> None:
+    async def publish_nlp(self, task_id: str) -> None:
         if self._channel is None or self._channel.is_closed:
             raise RuntimeError("RabbitMQ channel is not connected.")
 
